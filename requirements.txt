@@ -1,0 +1,6 @@
+numpy==1.11.3
+pandas==0.19.2
+scipy==0.18.1
+scikit_learn==0.18.1
+tensorflow==0.12.1
+pillow==4.0.0
