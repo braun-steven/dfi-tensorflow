@@ -1,4 +1,4 @@
-# Deep Feature Interpolation
+# [WIP] Deep Feature Interpolation
 Implementation of the Deep Feature Interpolation for Image Content Changes [paper](https://arxiv.org/abs/1611.05507) in tensorflow.
 
 ## Setup
