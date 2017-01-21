@@ -19,3 +19,30 @@ Use the gpu enabled tensorflow library by installing
 ```bash
 $ ./env/bin/pip install tensorflow-gpu
 ```
+
+## Usage
+```
+./env/bin/python src/main.py -h
+usage: Deep Feature Interpolation [-h] [--data_dir DATA_DIR]
+                                  [--model_path MODEL_PATH] [--gpu]
+                                  [--num_layers NUM_LAYERS]
+                                  [--feature FEATURE]
+                                  [--person_index PERSON_INDEX]
+                                  [--list_features] [--tf]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --data_dir DATA_DIR, -d DATA_DIR
+                        Path to data directory containing the images
+  --model_path MODEL_PATH, -m MODEL_PATH
+                        Path to the model file (*.npy)
+  --gpu, -g             Enable gpu computing
+  --num_layers NUM_LAYERS, -n NUM_LAYERS
+                        Number of layers. One of {1,2,3}
+  --feature FEATURE, -f FEATURE
+                        Name of the Feature.
+  --person_index PERSON_INDEX, -p PERSON_INDEX
+                        Index of the start image.
+  --list_features, -l   List all available features.
+  --tf                  Use Tensorflow for the optimization step
+```
