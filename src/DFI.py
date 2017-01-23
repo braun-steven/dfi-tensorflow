@@ -107,6 +107,7 @@ class DFI:
                     neg_deep_features,
                     axis=0)
                 w /= np.linalg.norm(w)
+                print(w)
 
                 # Calc phi(z)
                 phi_z = self._phi(start_img) + self._alpha * w
@@ -244,9 +245,9 @@ class DFI:
 
         # Handle correct return type and normalize (L2)
         if not isinstance(imgs, list):
-            return np.linalg.norm(res[0])  # Single image
+            return res[0]/np.linalg.norm(res[0])  # Single image
         else:
-            return [np.linalg.norm(x) for x in res]  # List of images
+            return [x/np.linalg.norm(x) for x in res]  # List of images
 
     def _minimize_z(self, z, phi_z, lamb, beta):
         """
