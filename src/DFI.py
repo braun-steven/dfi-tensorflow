@@ -79,7 +79,7 @@ class DFI:
         with tf.name_scope('DFI-Graph') as scope:
             # Run the graph in the session.
             with tf.Session(graph=self._graph, config=config) as self._sess:
-                self._sess.run(tf.global_variables_initializer())
+                self._sess.run(tf.initialize_all_variables())
 
                 self._conv_layer_tensors = [
                     self._graph.get_tensor_by_name(
