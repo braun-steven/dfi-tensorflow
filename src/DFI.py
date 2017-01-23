@@ -148,7 +148,7 @@ class DFI:
         # Run optimization steps in tensorflow
         optimizer = ScipyOptimizerInterface(loss,
                                             options={'maxiter': 10})
-        self._sess.run(tf.global_variables_initializer())
+        self._sess.run(tf.initialize_all_variables())
         print('Starting minimization')
         optimizer.minimize(self._sess, feed_dict={
             self._nn.inputRGB: [start_img]
@@ -167,7 +167,7 @@ class DFI:
         """
         # Init z with the initial guess
         phi_z_prime = self._phi_tensor()
-        subtract = tf.subtract(phi_z_prime, phi_z)
+        subtract = phi_z_prime - phi_z
         square = tf.square(subtract)
         reduce_sum = tf.reduce_sum(square)
         loss_first = tf.scalar_mul(0.5, reduce_sum)
