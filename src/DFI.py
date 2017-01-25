@@ -1,10 +1,11 @@
 from time import time
 
+import pickle
 import tensorflow as tf
 from scipy.optimize import minimize
 from sklearn.neighbors import KNeighborsClassifier
 from tensorflow.contrib.opt import ScipyOptimizerInterface
-
+import numpy as np
 from utils import *
 from vgg19 import Vgg19
 
@@ -144,18 +145,32 @@ class DFI:
         z = tf.Variable(start_img, dtype=tf.float32, name='z')
         # Define loss
         loss = self._minimize_z_tensor(phi_z_tensor, z)
-        # Run optimization steps in tensorflow
-        optimizer = ScipyOptimizerInterface(loss,
-                                            options={'maxiter': 10})
-        self._sess.run(tf.global_variables_initializer())
-        print('Starting minimization')
-        optimizer.minimize(self._sess, feed_dict={
-            self._nn.inputRGB: [start_img]
-        })
-        # Obtain Z
-        z_result = self._sess.run(z)
+
+        # Add the optimizer
+        train_op = tf.train.AdamOptimizer().minimize(loss)
+        # Add the ops to initialize variables.  These will include
+        # the optimizer slots added by AdamOptimizer().
+        init_op = tf.initialize_all_variables()
+
+        # Actually intialize the variables
+        self._sess.run(init_op)
+        # now train your model
+        ret = self._sess.run(train_op)
+
+        print('Dumping result')
+        pickle.dump(ret, open('result.pickle'))
+        # # Run optimization steps in tensorflow
+        # optimizer = ScipyOptimizerInterface(loss,
+        #                                     options={'maxiter': 10})
+        # self._sess.run(tf.global_variables_initializer())
+        # print('Starting minimization')
+        # optimizer.minimize(self._sess, feed_dict={
+        #     self._nn.inputRGB: [start_img]
+        # })
+        # # Obtain Z
+        # z_result = self._sess.run(z)
         # Dump result to 'z.npy'
-        np.save('z', z_result)
+        # np.save('z', z_result)
 
     def _minimize_z_tensor(self, phi_z, z):
         """
