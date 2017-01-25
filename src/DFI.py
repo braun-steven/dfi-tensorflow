@@ -155,10 +155,12 @@ class DFI:
         # Actually intialize the variables
         self._sess.run(init_op)
         # now train your model
-        ret = self._sess.run(train_op)
+        ret = self._sess.run(train_op, feed_dict={
+                self._nn.inputRGB: [start_img]
+            })
 
         print('Dumping result')
-        pickle.dump(ret, open('result.pickle'))
+        pickle.dump(ret, open('result.pickle', 'w'))
         # # Run optimization steps in tensorflow
         # optimizer = ScipyOptimizerInterface(loss,
         #                                     options={'maxiter': 10})
