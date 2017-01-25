@@ -80,7 +80,7 @@ class DFI:
         with tf.name_scope('DFI-Graph') as scope:
             # Run the graph in the session.
             with tf.Session(graph=self._graph, config=config) as self._sess:
-                self._sess.run(tf.global_variables_initializer())
+                self._sess.run(tf.initialize_all_variables())
 
                 self._conv_layer_tensors = [
                     self._graph.get_tensor_by_name(
@@ -181,7 +181,7 @@ class DFI:
         """
         # Init z with the initial guess
         phi_z_prime = self._phi_tensor()
-        subtract = tf.subtract(phi_z_prime, phi_z)
+        subtract = phi_z_prime - phi_z
         square = tf.square(subtract)
         reduce_sum = tf.reduce_sum(square)
         loss_first = tf.scalar_mul(0.5, reduce_sum)
@@ -259,9 +259,9 @@ class DFI:
 
         # Handle correct return type and normalize (L2)
         if not isinstance(imgs, list):
-            return np.linalg.norm(res[0])  # Single image
+            return res[0]/np.linalg.norm(res[0])  # Single image
         else:
-            return [np.linalg.norm(x) for x in res]  # List of images
+            return [x/np.linalg.norm(x) for x in res]  # List of images
 
     def _minimize_z(self, z, phi_z, lamb, beta):
         """

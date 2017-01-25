@@ -1,3 +1,5 @@
+# Code from https://github.com/boyw165/tensorflow-vgg
+
 import numpy as np
 import tensorflow as tf
 

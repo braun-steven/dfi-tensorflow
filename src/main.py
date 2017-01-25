@@ -1,5 +1,6 @@
 import argparse
 import os.path
+from pprint import pprint
 
 import numpy as np
 
@@ -28,7 +29,7 @@ def parse_arg():
     parser.add_argument('--list_features', '-l', default=False,
                         action='store_true', help='List all available '
                                                   'features.')
-    parser.add_argument('--tf', default=True, action='store_true',
+    parser.add_argument('--tf', default=False, action='store_true',
                         help="Use Tensorflow for the optimization step")
     args = vars(parser.parse_args())
 
@@ -55,7 +56,7 @@ def main():
     """
     # Get args
     args = parse_arg()
-
+    pprint(args)
     # Init DFI
     print('Creating DFI Object')
     dfi = DFI(**args)
@@ -67,7 +68,7 @@ def main():
         exit(0)
 
     # Run
-    dfi.run(feat=args['feature'], person_index=args['person_index'])
+    dfi.run(feat=args['feature'], person_index=args['person_index'], use_tf=args['tf'])
 
 
 if __name__ == '__main__':
