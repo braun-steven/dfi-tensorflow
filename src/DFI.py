@@ -78,7 +78,7 @@ class DFI:
         if self._gpu:
             config.gpu_options.allow_growth = False
             config.gpu_options.per_process_gpu_memory_fraction = 0.80
-            config.log_device_placement = True
+            # config.log_device_placement = True
 
         # Name-scope for tensorboard
         with tf.name_scope('DFI-Graph') as scope:
