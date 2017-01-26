@@ -1,4 +1,6 @@
 from time import time
+import matplotlib as mpl
+mpl.use('Agg')
 
 import pickle
 import tensorflow as tf
