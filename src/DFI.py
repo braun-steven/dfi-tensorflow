@@ -8,6 +8,7 @@ from tensorflow.contrib.opt import ScipyOptimizerInterface
 import numpy as np
 from utils import *
 from vgg19 import Vgg19
+import matplotlib.pyplot as plt
 
 
 class DFI:
@@ -19,7 +20,7 @@ class DFI:
 
     def __init__(self, k=10, alpha=0.4, lamb=0.001, beta=2,
                  model_path="./model/vgg19.npy", num_layers=3,
-                 gpu=True, data_dir='./data', **kwargs):
+                 gpu=True, data_dir='./data', optimizer='l-bfgs',**kwargs):
         """
         Initialize the DFI procedure
         :param k: Number of nearest neighbours
@@ -41,6 +42,7 @@ class DFI:
         self._gpu = gpu
         self._conv_layer_tensors = []
         self._data_dir = data_dir
+        self._optimizer = optimizer
 
         self._conv_layer_tensor_names = ['conv3_1/Relu:0',
                                          'conv4_1/Relu:0',
@@ -142,37 +144,60 @@ class DFI:
         phi_z_tensor = tf.constant(phi_z, dtype=tf.float32,
                                    name='phi_x_alpha_w')
         # Variable which is to be optimized
-        z = tf.Variable(start_img, dtype=tf.float32, name='z')
+        # z = tf.Variable(start_img, dtype=tf.float32, name='z')
+        z = tf.Variable(np.random.rand(224,224,3), dtype=tf.float32, name='z')
         # Define loss
         loss = self._minimize_z_tensor(phi_z_tensor, z)
 
-        # Add the optimizer
-        train_op = tf.train.AdamOptimizer().minimize(loss)
-        # Add the ops to initialize variables.  These will include
-        # the optimizer slots added by AdamOptimizer().
-        init_op = tf.initialize_all_variables()
+        z = None
 
-        # Actually intialize the variables
-        self._sess.run(init_op)
-        # now train your model
-        ret = self._sess.run(train_op, feed_dict={
+        if self._optimizer == 'l-bfgs':
+            # Run optimization steps in tensorflow
+            optimizer = ScipyOptimizerInterface(loss,
+                                                options={'maxiter': 10})
+            self._sess.run(tf.global_variables_initializer())
+            print('Starting minimization')
+            optimizer.minimize(self._sess, feed_dict={
                 self._nn.inputRGB: [start_img]
             })
+            # Obtain Z
+            z = self._sess.run(z)
 
+        elif self._optimizer == 'adam':
+
+            for eps in [10**k for k in range(-12, 1, 1)]:
+                for lr in [10**k for k in range(-8, 2, 1)]:
+                    # Add the optimizer
+                    train_op = tf.train.AdamOptimizer(epsilon=eps, learning_rate=lr).minimize(loss)
+                    # Add the ops to initialize variables.  These will include
+                    # the optimizer slots added by AdamOptimizer().
+                    init_op = tf.initialize_all_variables()
+
+                    # Actually intialize the variables
+                    self._sess.run(init_op)
+                    # now train your model
+                    ret = self._sess.run([train_op, z], feed_dict={
+                        self._nn.inputRGB: [start_img]
+                    })
+
+                    z = ret[1]/255.0
+
+                    # imgplot = plt.imshow(z)
+                    print(eps, lr)
+                    print('Dumping result')
+                    plt.imsave(fname='z_{}_{}.png'.format(eps, lr),arr=z)
+                    diff_img = (ret[1] - start_img) / 255.0
+                    print('Max diff pixel: {}'.format(diff_img.max()))
+                    plt.imsave(fname='diff_{}_{}.png'.format(eps, lr), arr=diff_img)
+
+
+        # imgplot = plt.imshow(z)
         print('Dumping result')
-        pickle.dump(ret, open('result.pickle', 'w'))
-        # # Run optimization steps in tensorflow
-        # optimizer = ScipyOptimizerInterface(loss,
-        #                                     options={'maxiter': 10})
-        # self._sess.run(tf.global_variables_initializer())
-        # print('Starting minimization')
-        # optimizer.minimize(self._sess, feed_dict={
-        #     self._nn.inputRGB: [start_img]
-        # })
-        # # Obtain Z
-        # z_result = self._sess.run(z)
-        # Dump result to 'z.npy'
-        # np.save('z', z_result)
+        plt.imsave(fname='z.png',arr=z)
+        diff_img = (ret[1] - start_img) / 255.0
+        print('Max diff pixel: {}'.format(diff_img.max()))
+        plt.imsave(fname='diff.png', arr=diff_img)
+
 
     def _minimize_z_tensor(self, phi_z, z):
         """

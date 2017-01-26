@@ -31,6 +31,7 @@ def parse_arg():
                                                   'features.')
     parser.add_argument('--tf', default=False, action='store_true',
                         help="Use Tensorflow for the optimization step")
+    parser.add_argument('--optimizer', '-o', type=str, help='Optimizer type')
     args = vars(parser.parse_args())
 
     # Check argument constraints
