@@ -75,9 +75,10 @@ class DFI:
         print('Starting DFI')
         # Config for gpu
         config = tf.ConfigProto()
-        if self._gpu:
-            config.gpu_options.allow_growth = False
-            config.gpu_options.per_process_gpu_memory_fraction = 0.80
+        # if self._gpu:
+        #     pass
+            # config.gpu_options.allow_growth = False
+            # config.gpu_options.per_process_gpu_memory_fraction = 0.80
             # config.log_device_placement = True
 
         # Name-scope for tensorboard
@@ -180,21 +181,21 @@ class DFI:
                         self._nn.inputRGB: [start_img]
                     })
 
-                    z_result = ret[1]/255.0
+                    z_result = abs(ret[1]/255.0)
 
                     # imgplot = plt.imshow(z)
                     print(eps, lr)
                     print('Dumping result')
                     plt.imsave(fname='z_{}_{}.png'.format(eps, lr),arr=z_result)
-                    diff_img = (ret[1] - start_img) / 255.0
+                    diff_img = abs((ret[1] - start_img) / 255.0)
                     print('Max diff pixel: {}'.format(diff_img.max()))
                     plt.imsave(fname='diff_{}_{}.png'.format(eps, lr), arr=diff_img)
+            return
 
-
-        # imgplot = plt.imshow(z)
+        imgplot = plt.imshow(z)
         print('Dumping result')
         plt.imsave(fname='z.png',arr=z_result)
-        diff_img = (ret[1] - start_img) / 255.0
+        diff_img = (z_result - start_img) / 255.0
         print('Max diff pixel: {}'.format(diff_img.max()))
         plt.imsave(fname='diff.png', arr=diff_img)
 
