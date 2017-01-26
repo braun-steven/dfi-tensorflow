@@ -181,13 +181,13 @@ class DFI:
                         self._nn.inputRGB: [start_img]
                     })
 
-                    z_result = abs(ret[1]/255.0)
+                    z_result = np.abs(ret[1]/255.0)
 
                     # imgplot = plt.imshow(z)
                     print(eps, lr)
                     print('Dumping result')
                     plt.imsave(fname='z_{}_{}.png'.format(eps, lr),arr=z_result)
-                    diff_img = abs((ret[1] - start_img) / 255.0)
+                    diff_img = np.abs((ret[1] - start_img) / 255.0)
                     print('Max diff pixel: {}'.format(diff_img.max()))
                     plt.imsave(fname='diff_{}_{}.png'.format(eps, lr), arr=diff_img)
             return
