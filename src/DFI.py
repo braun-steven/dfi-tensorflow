@@ -22,7 +22,8 @@ class DFI:
 
     def __init__(self, k=10, alpha=0.4, lamb=0.001, beta=2,
                  model_path="./model/vgg19.npy", num_layers=3,
-                 gpu=True, data_dir='./data', optimizer='l-bfgs', **kwargs):
+                 gpu=True, data_dir='./data', optimizer='l-bfgs', lr=None,
+                 eps = None,**kwargs):
         """
         Initialize the DFI procedure
         :param k: Number of nearest neighbours
@@ -45,6 +46,8 @@ class DFI:
         self._conv_layer_tensors = []
         self._data_dir = data_dir
         self._optimizer = optimizer
+        self._eps = eps
+        self._lr = lr
 
         self._conv_layer_tensor_names = ['conv3_1/Relu:0',
                                          'conv4_1/Relu:0',
@@ -172,34 +175,30 @@ class DFI:
             z_result = self._sess.run(z)
 
         elif self._optimizer == 'adam':
+            # Add the optimizer
+            train_op = tf.train.AdamOptimizer(epsilon=self._eps,
+                                              learning_rate=self._lr).minimize(loss)
+            # Add the ops to initialize variables.  These will include
+            # the optimizer slots added by AdamOptimizer().
+            init_op = tf.initialize_all_variables()
 
-            for eps in [10 ** k for k in range(-12, 1, 1)]:
-                for lr in [10 ** k for k in range(-8, 2, 1)]:
-                    # Add the optimizer
-                    train_op = tf.train.AdamOptimizer(epsilon=eps,
-                                                      learning_rate=lr).minimize(loss)
-                    # Add the ops to initialize variables.  These will include
-                    # the optimizer slots added by AdamOptimizer().
-                    init_op = tf.initialize_all_variables()
+            # Actually intialize the variables
+            self._sess.run(init_op)
+            # now train your model
+            ret = self._sess.run([train_op, z], feed_dict={
+                self._nn.inputRGB: [rand_img]
+            })
 
-                    # Actually intialize the variables
-                    self._sess.run(init_op)
-                    # now train your model
-                    ret = self._sess.run([train_op, z], feed_dict={
-                        self._nn.inputRGB: [rand_img]
-                    })
+            z_result = np.abs(ret[1] / 255.0)
 
-                    z_result = np.abs(ret[1] / 255.0)
-
-                    # imgplot = plt.imshow(z)
-                    print(eps, lr)
-                    print('Dumping result')
-                    plt.imsave(fname='z_{}_{}.png'.format(eps, lr),
-                               arr=z_result)
-                    diff_img = np.abs((ret[1] - start_img) / 255.0)
-                    print('Max diff pixel: {}'.format(diff_img.max()))
-                    plt.imsave(fname='diff_{}_{}.png'.format(eps, lr),
-                               arr=diff_img)
+            # imgplot = plt.imshow(z)
+            print('Dumping result')
+            plt.imsave(fname='z_{}_{}.png'.format(self._eps, self._lr),
+                       arr=z_result)
+            diff_img = np.abs((ret[1] - start_img) / 255.0)
+            print('Max diff pixel: {}'.format(diff_img.max()))
+            plt.imsave(fname='diff_{}_{}.png'.format(self._eps, self._lr),
+                       arr=diff_img)
             return
 
         imgplot = plt.imshow(z)
