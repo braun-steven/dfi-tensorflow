@@ -1,13 +1,13 @@
 from time import time
+
 import matplotlib as mpl
+
 mpl.use('Agg')
 
-import pickle
 import tensorflow as tf
 from scipy.optimize import minimize
 from sklearn.neighbors import KNeighborsClassifier
 from tensorflow.contrib.opt import ScipyOptimizerInterface
-import numpy as np
 from utils import *
 from vgg19 import Vgg19
 import matplotlib.pyplot as plt
@@ -22,7 +22,7 @@ class DFI:
 
     def __init__(self, k=10, alpha=0.4, lamb=0.001, beta=2,
                  model_path="./model/vgg19.npy", num_layers=3,
-                 gpu=True, data_dir='./data', optimizer='l-bfgs',**kwargs):
+                 gpu=True, data_dir='./data', optimizer='l-bfgs', **kwargs):
         """
         Initialize the DFI procedure
         :param k: Number of nearest neighbours
@@ -77,9 +77,9 @@ class DFI:
         config = tf.ConfigProto()
         # if self._gpu:
         #     pass
-            # config.gpu_options.allow_growth = False
-            # config.gpu_options.per_process_gpu_memory_fraction = 0.80
-            # config.log_device_placement = True
+        # config.gpu_options.allow_growth = False
+        # config.gpu_options.per_process_gpu_memory_fraction = 0.80
+        # config.log_device_placement = True
 
         # Name-scope for tensorboard
         with tf.name_scope('DFI-Graph') as scope:
@@ -144,11 +144,18 @@ class DFI:
         np.save('z', opt_res.x)
 
     def optimize_z_tf(self, phi_z, start_img):
+        """
+
+        :param phi_z: phi(start_img) + alpha*w
+        :param start_img: start img
+        :return:
+        """
         phi_z_tensor = tf.constant(phi_z, dtype=tf.float32,
                                    name='phi_x_alpha_w')
         # Variable which is to be optimized
         # z = tf.Variable(start_img, dtype=tf.float32, name='z')
-        z = tf.Variable(np.random.rand(224,224,3), dtype=tf.float32, name='z')
+        rand_img = np.random.rand(224, 224, 3)
+        z = tf.Variable(rand_img, dtype=tf.float32, name='z')
         # Define loss
         loss = self._minimize_z_tensor(phi_z_tensor, z)
 
@@ -166,10 +173,11 @@ class DFI:
 
         elif self._optimizer == 'adam':
 
-            for eps in [10**k for k in range(-12, 1, 1)]:
-                for lr in [10**k for k in range(-8, 2, 1)]:
+            for eps in [10 ** k for k in range(-12, 1, 1)]:
+                for lr in [10 ** k for k in range(-8, 2, 1)]:
                     # Add the optimizer
-                    train_op = tf.train.AdamOptimizer(epsilon=eps, learning_rate=lr).minimize(loss)
+                    train_op = tf.train.AdamOptimizer(epsilon=eps,
+                                                      learning_rate=lr).minimize(loss)
                     # Add the ops to initialize variables.  These will include
                     # the optimizer slots added by AdamOptimizer().
                     init_op = tf.initialize_all_variables()
@@ -178,27 +186,28 @@ class DFI:
                     self._sess.run(init_op)
                     # now train your model
                     ret = self._sess.run([train_op, z], feed_dict={
-                        self._nn.inputRGB: [start_img]
+                        self._nn.inputRGB: [rand_img]
                     })
 
-                    z_result = np.abs(ret[1]/255.0)
+                    z_result = np.abs(ret[1] / 255.0)
 
                     # imgplot = plt.imshow(z)
                     print(eps, lr)
                     print('Dumping result')
-                    plt.imsave(fname='z_{}_{}.png'.format(eps, lr),arr=z_result)
+                    plt.imsave(fname='z_{}_{}.png'.format(eps, lr),
+                               arr=z_result)
                     diff_img = np.abs((ret[1] - start_img) / 255.0)
                     print('Max diff pixel: {}'.format(diff_img.max()))
-                    plt.imsave(fname='diff_{}_{}.png'.format(eps, lr), arr=diff_img)
+                    plt.imsave(fname='diff_{}_{}.png'.format(eps, lr),
+                               arr=diff_img)
             return
 
         imgplot = plt.imshow(z)
         print('Dumping result')
-        plt.imsave(fname='z.png',arr=z_result)
+        plt.imsave(fname='z.png', arr=z_result)
         diff_img = (z_result - start_img) / 255.0
         print('Max diff pixel: {}'.format(diff_img.max()))
         plt.imsave(fname='diff.png', arr=diff_img)
-
 
     def _minimize_z_tensor(self, phi_z, z):
         """
@@ -212,10 +221,10 @@ class DFI:
         subtract = phi_z_prime - phi_z
         square = tf.square(subtract)
         reduce_sum = tf.reduce_sum(square)
-        loss_first = tf.scalar_mul(0.5, reduce_sum)
+        loss_first = 0.5 * reduce_sum
         regularization = self._total_variation_regularization(z, self._beta)
-        tv_loss = tf.scalar_mul(self._lamb, regularization)
-        loss = tf.add(loss_first, tv_loss, name='loss')
+        tv_loss = self._lamb * regularization
+        loss = loss_first + tv_loss
         return loss
 
     def _total_variation_regularization(self, x, beta=1):
@@ -287,9 +296,9 @@ class DFI:
 
         # Handle correct return type and normalize (L2)
         if not isinstance(imgs, list):
-            return res[0]/np.linalg.norm(res[0])  # Single image
+            return res[0] / np.linalg.norm(res[0])  # Single image
         else:
-            return [x/np.linalg.norm(x) for x in res]  # List of images
+            return [x / np.linalg.norm(x) for x in res]  # List of images
 
     def _minimize_z(self, z, phi_z, lamb, beta):
         """
