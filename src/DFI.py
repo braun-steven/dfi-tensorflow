@@ -151,8 +151,6 @@ class DFI:
         # Define loss
         loss = self._minimize_z_tensor(phi_z_tensor, z)
 
-        z = None
-
         if self._optimizer == 'l-bfgs':
             # Run optimization steps in tensorflow
             optimizer = ScipyOptimizerInterface(loss,
@@ -163,7 +161,7 @@ class DFI:
                 self._nn.inputRGB: [start_img]
             })
             # Obtain Z
-            z = self._sess.run(z)
+            z_result = self._sess.run(z)
 
         elif self._optimizer == 'adam':
 
@@ -182,12 +180,12 @@ class DFI:
                         self._nn.inputRGB: [start_img]
                     })
 
-                    z = ret[1]/255.0
+                    z_result = ret[1]/255.0
 
                     # imgplot = plt.imshow(z)
                     print(eps, lr)
                     print('Dumping result')
-                    plt.imsave(fname='z_{}_{}.png'.format(eps, lr),arr=z)
+                    plt.imsave(fname='z_{}_{}.png'.format(eps, lr),arr=z_result)
                     diff_img = (ret[1] - start_img) / 255.0
                     print('Max diff pixel: {}'.format(diff_img.max()))
                     plt.imsave(fname='diff_{}_{}.png'.format(eps, lr), arr=diff_img)
@@ -195,7 +193,7 @@ class DFI:
 
         # imgplot = plt.imshow(z)
         print('Dumping result')
-        plt.imsave(fname='z.png',arr=z)
+        plt.imsave(fname='z.png',arr=z_result)
         diff_img = (ret[1] - start_img) / 255.0
         print('Max diff pixel: {}'.format(diff_img.max()))
         plt.imsave(fname='diff.png', arr=diff_img)
