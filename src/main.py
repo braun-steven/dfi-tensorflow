@@ -33,8 +33,9 @@ def parse_arg():
                         help="Use Tensorflow for the optimization step")
     parser.add_argument('--optimizer', '-o', type=str, help='Optimizer type')
 
-    parser.add_argument('--lr',type=str, help='Learning rate interval in log10')
-    parser.add_argument('--eps',type=str, help='Epsilon interval in log10')
+    parser.add_argument('--lr', type=str,
+                        help='Learning rate interval in log10')
+    parser.add_argument('--eps', type=str, help='Epsilon interval in log10')
 
     args = vars(parser.parse_args())
 
@@ -66,19 +67,17 @@ def main():
     lr = args['lr']
     eps = args['eps']
 
-    lr_lower = lr.split(',')[0]
-    lr_upper = lr.split(',')[1]
+    lr_lower = int(lr.split(',')[0])
+    lr_upper = int(lr.split(',')[1])
 
-    eps_lower = eps.split(',')[0]
-    eps_upper = eps.split(',')[1]
-
+    eps_lower = int(eps.split(',')[0])
+    eps_upper = int(eps.split(',')[1])
 
     for lr in range(lr_lower, lr_upper):
         for eps in range(eps_lower, eps_upper):
 
             args['lr'] = lr
             args['eps'] = eps
-
 
             # Init DFI
             print('Creating DFI Object')
@@ -91,7 +90,8 @@ def main():
                 exit(0)
 
             # Run
-            dfi.run(feat=args['feature'], person_index=args['person_index'], use_tf=args['tf'])
+            dfi.run(feat=args['feature'], person_index=args['person_index'],
+                    use_tf=args['tf'])
 
 
 if __name__ == '__main__':
