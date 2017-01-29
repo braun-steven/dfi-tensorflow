@@ -5,9 +5,7 @@ import matplotlib as mpl
 mpl.use('Agg')
 
 import tensorflow as tf
-from scipy.optimize import minimize
 from sklearn.neighbors import KNeighborsClassifier
-from tensorflow.contrib.opt import ScipyOptimizerInterface
 from utils import *
 from vgg19 import Vgg19
 import matplotlib.pyplot as plt
@@ -23,7 +21,7 @@ class DFI:
     def __init__(self, k=10, alpha=0.4, lamb=0.001, beta=2,
                  model_path="./model/vgg19.npy", num_layers=3,
                  gpu=True, data_dir='./data', optimizer='l-bfgs', lr=None,
-                 eps = None,**kwargs):
+                 eps=None, **kwargs):
         """
         Initialize the DFI procedure
         :param k: Number of nearest neighbours
@@ -92,9 +90,8 @@ class DFI:
 
                 self._conv_layer_tensors = [
                     self._graph.get_tensor_by_name(
-                        self._conv_layer_tensor_names[idx]) for
-                    idx
-                    in range(self._num_layers)]
+                        self._conv_layer_tensor_names[idx])
+                    for idx in range(self._num_layers)]
 
                 atts = load_discrete_lfw_attributes(self._data_dir)
                 imgs_path = atts['path'].values
@@ -120,31 +117,7 @@ class DFI:
                 # Calc phi(z)
                 phi_z = self._phi(start_img) + self._alpha * w
 
-                if use_tf:
-                    self.optimize_z_tf(phi_z, start_img)
-                else:
-                    self.optimize_z_cpu(phi_z, start_img)
-
-    def optimize_z_cpu(self, phi_z, start_img):
-        initial_guess = np.array(start_img).reshape(-1)
-        # Create bounds
-        bounds = []
-        for i in range(initial_guess.shape[0]):
-            bounds.append((0, 255))
-        print('Starting minimize function')
-        opt_res = minimize(fun=self._minimize_z,
-                           x0=start_img,
-                           args=(phi_z, self._lamb, self._beta),
-                           method='L-BFGS-B',
-                           options={
-                               # 'maxfun': 10,
-                               'disp': True,
-                               'eps': 5,
-                               'maxiter': 1
-                           },
-                           bounds=bounds
-                           )
-        np.save('z', opt_res.x)
+                self.optimize_z_tf(phi_z, start_img)
 
     def optimize_z_tf(self, phi_z, start_img):
         """
@@ -153,31 +126,28 @@ class DFI:
         :param start_img: start img
         :return:
         """
-        phi_z_tensor = tf.constant(phi_z, dtype=tf.float32,
-                                   name='phi_x_alpha_w')
+
+        phi_z_const_tensor = tf.constant(phi_z, dtype=tf.float32,
+                                         name='phi_x_alpha_w')
         # Variable which is to be optimized
-        # z = tf.Variable(start_img, dtype=tf.float32, name='z')
-        rand_img = np.random.rand(224, 224, 3)*255
-        z = tf.Variable(rand_img, dtype=tf.float32, name='z')
+        rand_img = np.random.rand(224, 224, 3) * 255
+        z_tensor = tf.Variable(rand_img, dtype=tf.float32, name='z_tensor')
+        tf.summary.image('imgs', tf.reshape(z_tensor, [
+            1] + z_tensor.get_shape().as_list(), name='imgs'))
+
         # Define loss
-        loss = self._minimize_z_tensor(phi_z_tensor, z)
+        loss, diff_loss_tensor, tv_loss_tensor = self._minimize_z_tensor(
+            phi_z_const_tensor, z_tensor)
 
-        if self._optimizer == 'l-bfgs':
-            # Run optimization steps in tensorflow
-            optimizer = ScipyOptimizerInterface(loss,
-                                                options={'maxiter': 10})
-            self._sess.run(tf.global_variables_initializer())
-            print('Starting minimization')
-            optimizer.minimize(self._sess, feed_dict={
-                self._nn.inputRGB: [start_img]
-            })
-            # Obtain Z
-            z_result = self._sess.run(z)
+        merged = tf.summary.merge_all()
 
-        elif self._optimizer == 'adam':
+        train_writer = tf.train.SummaryWriter('log')
+
+        if self._optimizer == 'adam':
             # Add the optimizer
             train_op = tf.train.AdamOptimizer(epsilon=self._eps,
-                                              learning_rate=self._lr).minimize(loss)
+                                              learning_rate=self._lr).minimize(
+                loss)
             # Add the ops to initialize variables.  These will include
             # the optimizer slots added by AdamOptimizer().
             init_op = tf.initialize_all_variables()
@@ -185,48 +155,62 @@ class DFI:
             # Actually intialize the variables
             self._sess.run(init_op)
             # now train your model
-            ret = self._sess.run([train_op, z], feed_dict={
-                self._nn.inputRGB: [rand_img]
-            })
-
-            z_result = np.abs(ret[1] / 255.0)
-
-            # imgplot = plt.imshow(z)
-            print('Dumping result')
-            plt.imsave(fname='z_{}_{}.png'.format(self._eps, self._lr),
-                       arr=z_result)
-            diff_img = np.abs((ret[1] - start_img) / 255.0)
-            print('Max diff pixel: {}'.format(diff_img.max()))
-            plt.imsave(fname='diff_{}_{}.png'.format(self._eps, self._lr),
-                       arr=diff_img)
-            return
-
-        print('Dumping result')
-        plt.imsave(fname='z.png', arr=z_result)
-        diff_img = (z_result - start_img) / 255.0
-        print('Max diff pixel: {}'.format(diff_img.max()))
-        plt.imsave(fname='diff.png', arr=diff_img)
 
 
+            steps = 5
+            for i in range(steps + 1):
+                z_prime = self._sess.run(z_tensor)
 
+                fd = {self._nn.inputRGB: [z_prime]}
+                train_op.run(feed_dict=fd)
+                if i % int(steps / 5.0) == 0:
+                    plt.imsave(fname='z_{}.png'.format(i),
+                               arr=self._sess.run(z_tensor))
 
-    def _minimize_z_tensor(self, phi_z, z):
+                summary = self._sess.run(merged, feed_dict=fd)
+
+                train_writer.add_summary(summary, i)
+
+                temp_loss, diff_loss, tv_loss = \
+                    self._sess.run([loss, diff_loss_tensor, tv_loss_tensor],
+                                   feed_dict=fd)
+
+                print('Step: {}'.format(i))
+                print('{:>10.4f} - loss'.format(temp_loss[0]))
+                print('{:>10.4f} - tv_loss'.format(tv_loss[0]))
+                print('{:>10.4f} - diff_loss'.format(diff_loss[0]))
+
+    def _minimize_z_tensor(self, phi_z_const_tensor, z_tensor):
         """
         Objective function implemented with tensors
-        :param phi_z: phi(x) + alpha*w
-        :param z: Variable
+        :param phi_z_const_tensor: phi(x) + alpha*w
+        :param z_tensor: Variable
         :return: loss
         """
-        # Init z with the initial guess
-        phi_z_prime = self._phi_tensor()
-        subtract = phi_z_prime - phi_z
-        square = tf.square(subtract)
-        reduce_sum = tf.reduce_sum(square)
-        loss_first = 0.5 * reduce_sum
-        regularization = self._total_variation_regularization(z, self._beta)
-        tv_loss = self._lamb * regularization
-        loss = loss_first + tv_loss
-        return loss
+
+        with tf.name_scope('summaries'):
+            # Init z with the initial guess
+            phi_z_prime = self._phi_tensor()
+            subtract = phi_z_prime - phi_z_const_tensor
+            square = tf.square(subtract)
+            reduce_sum = tf.reshape(tf.reduce_sum(square), [1])
+
+            regularization = self._total_variation_regularization(z_tensor,
+                                                                  self._beta)
+            with tf.name_scope('tv_loss'):
+                tv_loss = self._lamb * regularization
+
+            with tf.name_scope('diff_loss'):
+                diff_loss = 0.5 * reduce_sum
+
+            with tf.name_scope('loss'):
+                loss = diff_loss + tv_loss
+
+            tf.scalar_summary(['loss'], loss)
+            tf.scalar_summary(['tv_loss'], tv_loss)
+            tf.scalar_summary(['diff_loss'], diff_loss)
+
+            return loss, diff_loss, tv_loss
 
     def _total_variation_regularization(self, x, beta=1):
         """
@@ -241,6 +225,9 @@ class DFI:
         dw = tvw(x)
         tv = (tf.add(tf.reduce_sum(dh ** 2, [1, 2, 3]),
                      tf.reduce_sum(dw ** 2, [1, 2, 3]))) ** (beta / 2.)
+
+        tv /= np.prod(x.get_shape().as_list(), dtype=np.float32) * 255
+
         return tv
 
     def _conv2d(self, x, W, strides=[1, 1, 1, 1], p='SAME', name=None):
@@ -261,7 +248,18 @@ class DFI:
         for i in np.arange(1, self._num_layers):
             tmp = tf.reshape(self._conv_layer_tensors[i], [-1])
             res = tf.concat(0, [res, tmp])
-        return res
+
+        max_res = tf.reduce_max(tf.abs(self._conv_layer_tensors[0]), name='max')
+        tf.scalar_summary('max', max_res)
+
+        square = tf.square(res)
+        reduce_sum = tf.reduce_sum(square, name='phi_tensor_sum')
+        sqrt = tf.sqrt(reduce_sum, name='phi_tensor_sqrt')
+
+        tf.scalar_summary('phi_tensor_sum', reduce_sum)
+        tf.scalar_summary('phi_tensor_sqrt', sqrt)
+
+        return res / sqrt
 
     def _phi(self, imgs):
         """Transform list of images into deep feature space
@@ -300,46 +298,6 @@ class DFI:
             return res[0] / np.linalg.norm(res[0])  # Single image
         else:
             return [x / np.linalg.norm(x) for x in res]  # List of images
-
-    def _minimize_z(self, z, phi_z, lamb, beta):
-        """
-        Calculates the loss as described in the paper
-        :param z: Objective variable
-        :param phi_z: phiz
-        :param lamb: lambda
-        :param beta: beta
-        :return: loss
-        """
-        # Reshape into image form
-        z = z.reshape(224, 224, 3)
-
-        loss = 0.5 * np.linalg.norm(phi_z - self._phi(z)) ** 2
-        total_variation = lamb * self._R(z, beta)
-        res = loss + total_variation
-        print(loss)
-        print(total_variation)
-        # print(res)
-        return res
-
-    def _R(self, z, beta):
-        """
-        Total Variation regularizer
-        :param z: objective
-        :param beta: beta
-        :return: R
-        """
-        result = 0
-        for i in range(z.shape[0] - 1):
-            for j in range(z.shape[1] - 1):
-                var = np.linalg.norm(z[i][j + 1] - z[i][j]) ** 2 + \
-                      np.linalg.norm(z[i + 1][j] - z[i][j]) ** 2
-
-                result += var ** (beta * 0.5)
-
-        # normalize R
-        result /= np.prod(z.shape, dtype=np.float32)
-
-        return result
 
     def _get_sets(self, atts, feat, person_index):
         """

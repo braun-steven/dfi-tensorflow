@@ -64,38 +64,23 @@ def main():
     args = parse_arg()
     pprint(args)
 
-    lr = args['lr']
-    eps = args['eps']
+    args['lr'] = 5
+    args['eps'] = 10E-8
 
-    lr_lower = -4
-    #lr_lower = int(lr.split(',')[0])
-    lr_upper = 1
-    #lr_upper = int(lr.split(',')[1])
 
-    #eps_lower = int(eps.split(',')[0])
-    eps_lower = -10
-    #eps_upper = int(eps.split(',')[1])
-    eps_upper = -4
+    # Init DFI
+    print('Creating DFI Object')
+    dfi = DFI(**args)
 
-    for lr in range(lr_lower, lr_upper):
-        for eps in range(eps_lower, eps_upper):
+    # List features
+    if args['list_features']:
+        print('Available features to select:')
+        print(' - ' + '\n - '.join(sorted(dfi.features())))
+        exit(0)
 
-            args['lr'] = lr
-            args['eps'] = eps
-
-            # Init DFI
-            print('Creating DFI Object')
-            dfi = DFI(**args)
-
-            # List features
-            if args['list_features']:
-                print('Available features to select:')
-                print(' - ' + '\n - '.join(sorted(dfi.features())))
-                exit(0)
-
-            # Run
-            dfi.run(feat=args['feature'], person_index=args['person_index'],
-                    use_tf=args['tf'])
+    # Run
+    dfi.run(feat=args['feature'], person_index=args['person_index'],
+            use_tf=args['tf'])
 
 
 if __name__ == '__main__':
