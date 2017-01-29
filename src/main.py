@@ -67,11 +67,15 @@ def main():
     lr = args['lr']
     eps = args['eps']
 
-    lr_lower = int(lr.split(',')[0])
-    lr_upper = int(lr.split(',')[1])
+    lr_lower = -4
+    #lr_lower = int(lr.split(',')[0])
+    lr_upper = 1
+    #lr_upper = int(lr.split(',')[1])
 
-    eps_lower = int(eps.split(',')[0])
-    eps_upper = int(eps.split(',')[1])
+    #eps_lower = int(eps.split(',')[0])
+    eps_lower = -10
+    #eps_upper = int(eps.split(',')[1])
+    eps_upper = -4
 
     for lr in range(lr_lower, lr_upper):
         for eps in range(eps_lower, eps_upper):

@@ -157,7 +157,7 @@ class DFI:
                                    name='phi_x_alpha_w')
         # Variable which is to be optimized
         # z = tf.Variable(start_img, dtype=tf.float32, name='z')
-        rand_img = np.random.rand(224, 224, 3)
+        rand_img = np.random.rand(224, 224, 3)*255
         z = tf.Variable(rand_img, dtype=tf.float32, name='z')
         # Define loss
         loss = self._minimize_z_tensor(phi_z_tensor, z)
@@ -201,12 +201,14 @@ class DFI:
                        arr=diff_img)
             return
 
-        imgplot = plt.imshow(z)
         print('Dumping result')
         plt.imsave(fname='z.png', arr=z_result)
         diff_img = (z_result - start_img) / 255.0
         print('Max diff pixel: {}'.format(diff_img.max()))
         plt.imsave(fname='diff.png', arr=diff_img)
+
+
+
 
     def _minimize_z_tensor(self, phi_z, z):
         """
