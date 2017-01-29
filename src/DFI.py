@@ -2,7 +2,7 @@ from time import time
 
 import matplotlib as mpl
 
-mpl.use('Agg')
+mpl.use('TkAgg')
 
 import tensorflow as tf
 from sklearn.neighbors import KNeighborsClassifier
@@ -147,7 +147,7 @@ class DFI:
             # Add the optimizer
             train_op = tf.train.AdamOptimizer(epsilon=self._eps,
                                               learning_rate=self._lr).minimize(
-                loss)
+                loss, var_list=[z_tensor])
             # Add the ops to initialize variables.  These will include
             # the optimizer slots added by AdamOptimizer().
             init_op = tf.initialize_all_variables()
@@ -157,10 +157,9 @@ class DFI:
             # now train your model
 
 
-            steps = 5
+            steps = 1000
             for i in range(steps + 1):
                 z_prime = self._sess.run(z_tensor)
-
                 fd = {self._nn.inputRGB: [z_prime]}
                 train_op.run(feed_dict=fd)
                 if i % int(steps / 5.0) == 0:
@@ -249,8 +248,9 @@ class DFI:
             tmp = tf.reshape(self._conv_layer_tensors[i], [-1])
             res = tf.concat(0, [res, tmp])
 
-        max_res = tf.reduce_max(tf.abs(self._conv_layer_tensors[0]), name='max')
-        tf.scalar_summary('max', max_res)
+        tf.scalar_summary('mean0', tf.reduce_mean(self._conv_layer_tensors[0], name='mean0'))
+        tf.scalar_summary('mean1', tf.reduce_mean(self._conv_layer_tensors[1], name='mean1'))
+        tf.scalar_summary('mean2', tf.reduce_mean(self._conv_layer_tensors[2], name='mean2'))
 
         square = tf.square(res)
         reduce_sum = tf.reduce_sum(square, name='phi_tensor_sum')
@@ -274,10 +274,9 @@ class DFI:
             input_images = imgs
 
         t0 = time()
+        fd = {self._nn.inputRGB: input_images}
         ret = self._sess.run(self._conv_layer_tensors,
-                             feed_dict={
-                                 self._nn.inputRGB: input_images
-                             })
+                             feed_dict=fd)
         t1 = time()
         print('Took {}'.format(t1 - t0))
         res = []
