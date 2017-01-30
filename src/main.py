@@ -39,6 +39,9 @@ def parse_arg():
                         help='Number of steps')
     parser.add_argument('--eps', type=str, help='Epsilon interval in log10')
     parser.add_argument('--tk', help='Use TkInter', default=False, action='store_true')
+    parser.add_argument('--k', help='Number of nearest neighbours', type=int, default=10)
+    parser.add_argument('--alpha', help='Alpha param', type=float, default=0.4)
+    parser.add_argument('--lamb', help='Lambda param', type=float, default=0.001)
     parser.add_argument('--rebuild-cache', help='Rebuild the cache', default=False, action='store_true')
     args = vars(parser.parse_args())
 
