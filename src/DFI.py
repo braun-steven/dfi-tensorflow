@@ -96,7 +96,8 @@ class DFI:
                                     self._conv_layer_tensor_names[idx])
                                 for idx in range(self.FLAGS.num_layers)]
 
-                            atts = load_discrete_lfw_attributes(self.FLAGS.data_dir)
+                            atts = load_discrete_lfw_attributes(
+                                self.FLAGS.data_dir)
                             imgs_path = atts['path'].values
                             start_img = \
                                 reduce_img_size(load_images(*[imgs_path[0]]))[0]
@@ -147,7 +148,8 @@ class DFI:
         # merged = tf.summary.merge_all()
 
         log_path = 'log/run_k-{}_alpha-{}_feat-{}_lamb-{}_lr-{}_rand-{}.{}'.format(
-            self.FLAGS.k, self.FLAGS.alpha, self.FLAGS.feature, self.FLAGS.lamb, self.FLAGS.lr, self.FLAGS.random_start, time()
+            self.FLAGS.k, self.FLAGS.alpha, self.FLAGS.feature, self.FLAGS.lamb,
+            self.FLAGS.lr, self.FLAGS.random_start, time()
         )
         train_writer = tf.train.SummaryWriter(log_path)
 
@@ -222,12 +224,22 @@ class DFI:
             with tf.name_scope('diff_loss'):
                 diff_loss = 0.5 * reduce_sum
 
+            with tf.name_scope('loss_lower'):
+                loss_lower = -1 * tf.reduce_sum(
+                    (z_tensor - tf.abs(z_tensor)) / 2.0) / tf.reduce_prod(tf.shape(z_tensor))
+
+            with tf.name_scope('loss_upper'):
+                sub = (z_tensor - 255)
+                loss_upper = tf.reduce_sum((sub + tf.abs(sub)) / 2.0) / tf.reduce_prod(tf.shape(z_tensor))
+
             with tf.name_scope('loss'):
                 loss = diff_loss + tv_loss
 
             self._summaries.append(tf.scalar_summary('loss', loss))
             self._summaries.append(tf.scalar_summary('tv_loss', tv_loss))
             self._summaries.append(tf.scalar_summary('diff_loss', diff_loss))
+            self._summaries.append(tf.scalar_summary('loss_lower', loss_lower))
+            self._summaries.append(tf.scalar_summary('loss_upper', loss_upper))
 
             return loss, diff_loss, tv_loss
 
@@ -358,8 +370,9 @@ class DFI:
         knn = KNeighborsClassifier(n_jobs=4)
         dummy_target = [0 for x in range(subset.shape[0])]
         knn.fit(X=subset.as_matrix(), y=dummy_target)
-        knn_indices = knn.kneighbors(person.as_matrix(), n_neighbors=self.FLAGS.k,
-                                     return_distance=False)[0]
+        knn_indices = \
+            knn.kneighbors(person.as_matrix(), n_neighbors=self.FLAGS.k,
+                           return_distance=False)[0]
 
         neighbor_paths = paths.iloc[knn_indices]
 
