@@ -74,7 +74,7 @@ class DFI:
         with tf.device(device):
             self._graph_var = tf.Graph()
             with self._graph_var.as_default():
-                self._nn = Vgg19(model=self._model, input_placeholder=False)
+                self._nn = Vgg19(model=self._model, input_placeholder=False, data_dir=self._data_dir)
 
                 with tf.Session(graph=self._graph_var) as self._sess:
                     self._sess.run(tf.initialize_all_variables())
@@ -187,7 +187,7 @@ class DFI:
                     print('{:>14.10f} - tv_loss'.format(tv_loss))
                     print('{:>14.10f} - diff_loss'.format(diff_loss))
 
-                    im_sum_op = tf.image_summary('img{}'.format(i), tf.reshape(self._z_tensor, [1] + self._z_tensor.get_shape().as_list(), name='img'.format(i)))
+                    im_sum_op = tf.image_summary('img{}'.format(i), tensor=self._z_tensor, name='img'.format(i))
                     im_sum = self._sess.run(im_sum_op)
 
                     train_writer.add_summary(im_sum, global_step=i)
