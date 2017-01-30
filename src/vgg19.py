@@ -133,6 +133,7 @@ class Vgg19:
                                                     Vgg19.WIDTH,
                                                     Vgg19.HEIGHT,
                                                     Vgg19.CHANNELS],
+                                             seed=42,
                                              minval=0,
                                              maxval=255)
                 self._inputRGB = tf.Variable(rand_img, dtype=tf.float32,
