@@ -1,6 +1,6 @@
+import math
 from time import time
 
-import math
 import matplotlib as mpl
 import tqdm as tqdm
 
@@ -9,7 +9,6 @@ import tensorflow as tf
 from sklearn.neighbors import KNeighborsClassifier
 from utils import *
 from vgg19 import Vgg19
-import matplotlib.pyplot as plt
 import os.path
 
 
@@ -76,7 +75,8 @@ class DFI:
         with tf.device(device):
             self._graph_var = tf.Graph()
             with self._graph_var.as_default():
-                self._nn = Vgg19(model=self._model, input_placeholder=False, data_dir=self._data_dir,
+                self._nn = Vgg19(model=self._model, input_placeholder=False,
+                                 data_dir=self._data_dir,
                                  random_start=self._kwargs['random_start'])
 
                 with tf.Session(graph=self._graph_var) as self._sess:
@@ -113,7 +113,7 @@ class DFI:
                             atts = load_discrete_lfw_attributes(self._data_dir)
                             imgs_path = atts['path'].values
                             start_img = \
-                            reduce_img_size(load_images(*[imgs_path[0]]))[0]
+                                reduce_img_size(load_images(*[imgs_path[0]]))[0]
 
                             # Get image paths
                             pos_paths, neg_paths = self._get_sets(atts, feat,
@@ -154,7 +154,6 @@ class DFI:
         phi_z_const_tensor = tf.constant(phi_z, dtype=tf.float32,
                                          name='phi_x_alpha_w')
 
-
         # Define loss
         loss, diff_loss_tensor, tv_loss_tensor = self._minimize_z_tensor(
             phi_z_const_tensor, self._z_tensor)
@@ -193,7 +192,8 @@ class DFI:
 
                     if self._kwargs['verbose']:
                         temp_loss, diff_loss, tv_loss = \
-                            self._sess.run([loss, diff_loss_tensor, tv_loss_tensor])
+                            self._sess.run(
+                                [loss, diff_loss_tensor, tv_loss_tensor])
                         # train_writer.add_summary(summary, i)
                         print('Step: {}'.format(i))
                         print('{:>14.10f} - loss'.format(temp_loss))
@@ -202,11 +202,16 @@ class DFI:
 
                 # Output 10 images
                 if i % math.ceil(self._steps / 10) == 0:
-                    im_sum_op = tf.image_summary('img{}'.format(i), tensor=self._z_tensor, name='img'.format(i))
+                    tensor = self._z_tensor
+                    min = tf.reduce_min(tensor)
+                    max = tf.reduce_max(tensor)
+                    rescaled_img = 255 * (tensor - min) / (max - min)
+                    im_sum_op = tf.image_summary('img{}'.format(i),
+                                                 tensor=rescaled_img,
+                                                 name='img'.format(i))
                     im_sum = self._sess.run(im_sum_op)
 
                     train_writer.add_summary(im_sum, global_step=i)
-
 
     def _minimize_z_tensor(self, phi_z_const_tensor, z_tensor):
         """
@@ -277,9 +282,12 @@ class DFI:
             tmp = tf.reshape(self._conv_layer_tensors[i], [-1])
             res = tf.concat(0, [res, tmp])
 
-        self._summaries.append(tf.scalar_summary('mean0', tf.reduce_mean(self._conv_layer_tensors[0], name='mean0')))
-        self._summaries.append(tf.scalar_summary('mean1', tf.reduce_mean(self._conv_layer_tensors[1], name='mean1')))
-        self._summaries.append(tf.scalar_summary('mean2', tf.reduce_mean(self._conv_layer_tensors[2], name='mean2')))
+        self._summaries.append(tf.scalar_summary('mean0', tf.reduce_mean(
+            self._conv_layer_tensors[0], name='mean0')))
+        self._summaries.append(tf.scalar_summary('mean1', tf.reduce_mean(
+            self._conv_layer_tensors[1], name='mean1')))
+        self._summaries.append(tf.scalar_summary('mean2', tf.reduce_mean(
+            self._conv_layer_tensors[2], name='mean2')))
 
         square = tf.square(res)
         reduce_sum = tf.reduce_sum(square, name='phi_tensor_sum')
