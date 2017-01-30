@@ -3,6 +3,8 @@
 import numpy as np
 import tensorflow as tf
 
+from utils import load_discrete_lfw_attributes, reduce_img_size, load_images
+
 _VGG_MEAN = [103.939, 116.779, 123.68]
 
 
@@ -124,8 +126,15 @@ class Vgg19:
 
         else:
             rand_img = tf.random_uniform(shape=[1, 224, 224, 3], minval=0, maxval=255)
-            self._inputRGB = tf.Variable(rand_img, dtype=tf.float32,
+            atts = load_discrete_lfw_attributes('/home/tak/dfi-tensorflow/data')
+            imgs_path = atts['path'].values
+            start_img = reduce_img_size(load_images(*[imgs_path[0]]))[0]
+
+            self._inputRGB = tf.Variable(np.reshape(start_img, newshape=(1,) + start_img.shape),
+                                         dtype=tf.float32,
                                          name='z_tensor')
+            # self._inputRGB = tf.Variable(rand_img, dtype=tf.float32,
+            #                              name='z_tensor')
 
         # Convert RGB to BGR order
         # Size: 224x224x3

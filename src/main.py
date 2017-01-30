@@ -13,20 +13,20 @@ def parse_arg():
     """
     print('Parsing arguments')
     parser = argparse.ArgumentParser('Deep Feature Interpolation')
-    parser.add_argument('--data_dir', '-d', default='data', type=str,
+    parser.add_argument('--data-dir', '-d', default='data', type=str,
                         help='Path to data directory containing the images')
-    parser.add_argument('--model_path', '-m', default='model/vgg19.npy',
+    parser.add_argument('--model-path', '-m', default='model/vgg19.npy',
                         type=str,
                         help='Path to the model file (*.npy)')
     parser.add_argument('--gpu', '-g', default=False, action='store_true',
                         help='Enable gpu computing')
-    parser.add_argument('--num_layers', '-n', default=3, type=int,
+    parser.add_argument('--num-layers', '-n', default=3, type=int,
                         help='Number of layers. One of {1,2,3}')
     parser.add_argument('--feature', '-f', default='No Beard', type=str,
                         help='Name of the Feature.')
-    parser.add_argument('--person_index', '-p', default=0, type=int,
+    parser.add_argument('--person-index', '-p', default=0, type=int,
                         help="Index of the start image.")
-    parser.add_argument('--list_features', '-l', default=False,
+    parser.add_argument('--list-features', '-l', default=False,
                         action='store_true', help='List all available '
                                                   'features.')
     parser.add_argument('--tf', default=False, action='store_true',
@@ -35,10 +35,11 @@ def parse_arg():
 
     parser.add_argument('--lr', type=int, default=1,
                         help='Learning rate interval in log10')
-    parser.add_argument('--steps', type=int, default=1000,
+    parser.add_argument('--steps', type=int, default=2000,
                         help='Number of steps')
     parser.add_argument('--eps', type=str, help='Epsilon interval in log10')
-    parser.add_argument('--tk', type=bool, help='Use TkInter', default=False, action='store_true')
+    parser.add_argument('--tk', help='Use TkInter', default=False, action='store_true')
+    parser.add_argument('--rebuild-cache', help='Rebuild the cache', default=False, action='store_true')
     args = vars(parser.parse_args())
 
     # Check argument constraints

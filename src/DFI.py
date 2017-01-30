@@ -22,7 +22,7 @@ class DFI:
     def __init__(self, k=10, alpha=0.4, lamb=0.001, beta=2,
                  model_path="./model/vgg19.npy", num_layers=3,
                  gpu=True, data_dir='./data', optimizer='l-bfgs', lr=None,
-                 eps=None, steps=1000, **kwargs):
+                 eps=None, steps=1000, rebuild_cache=False, **kwargs):
         """
         Initialize the DFI procedure
         :param k: Number of nearest neighbours
@@ -49,6 +49,7 @@ class DFI:
         self._lr = lr
         self._steps = steps
         self._summaries = []
+        self._rebuild_cache = rebuild_cache
 
         self._conv_layer_tensor_names = ['conv3_1/Relu:0',
                                          'conv4_1/Relu:0',
@@ -63,19 +64,33 @@ class DFI:
         :return:
         """
         print('Starting DFI')
-        # Config for gpu
-        config = tf.ConfigProto()
-        # if self._gpu:
-        #     pass
-        # config.gpu_options.allow_growth = False
-        # config.gpu_options.per_process_gpu_memory_fraction = 0.80
-        # config.log_device_placement = True
 
         # Name-scope for tensorboard
         # Setup        # Set device
-        device = '/gpu:0' if self._gpu else '/cpu:0'
 
-        if not os.path.isfile('cache.ch.npy'):
+        device = '/gpu:0' if self._gpu else '/cpu:0'
+        phi_z = self._get_phi_z_const(device, feat, person_index)
+        # Open second session with
+        with tf.device(device):
+            self._graph_var = tf.Graph()
+            with self._graph_var.as_default():
+                self._nn = Vgg19(model=self._model, input_placeholder=False)
+
+                with tf.Session(graph=self._graph_var) as self._sess:
+                    self._sess.run(tf.initialize_all_variables())
+
+                    self._conv_layer_tensors = [
+                        self._graph_var.get_tensor_by_name(
+                            self._conv_layer_tensor_names[idx])
+                        for idx in range(self._num_layers)]
+
+                    # Set z_tensor reference
+                    self._z_tensor = self._nn.inputRGB
+
+                    self.optimize_z_tf(phi_z)
+
+    def _get_phi_z_const(self, device, feat, person_index):
+        if self._rebuild_cache or not os.path.isfile('cache.ch.npy'):
             print('Using device: {}'.format(device))
             with tf.device(device):
                 self._graph_ph = tf.Graph()
@@ -84,7 +99,7 @@ class DFI:
 
                     with tf.name_scope('DFI-Graph') as scope:
                         # Run the graph in the session.
-                        with tf.Session(graph=self._graph_ph, config=config) as self._sess:
+                        with tf.Session(graph=self._graph_ph) as self._sess:
                             self._sess.run(tf.initialize_all_variables())
 
                             self._conv_layer_tensors = [
@@ -94,10 +109,12 @@ class DFI:
 
                             atts = load_discrete_lfw_attributes(self._data_dir)
                             imgs_path = atts['path'].values
-                            start_img = reduce_img_size(load_images(*[imgs_path[0]]))[0]
+                            start_img = \
+                            reduce_img_size(load_images(*[imgs_path[0]]))[0]
 
                             # Get image paths
-                            pos_paths, neg_paths = self._get_sets(atts, feat, person_index)
+                            pos_paths, neg_paths = self._get_sets(atts, feat,
+                                                                  person_index)
 
                             # Reduce image sizes
                             pos_imgs = reduce_img_size(load_images(*pos_paths))
@@ -114,30 +131,14 @@ class DFI:
                             w /= np.linalg.norm(w)
 
                             # Calc phi(z)
-                            phi_z = self._phi(start_img) + self._alpha * w
+                            phi = self._phi(start_img)
+                            phi_z = phi + self._alpha * w
                             np.save('cache.ch', phi_z)
         else:
             print('Loading cached phi_z')
             phi_z = np.load('cache.ch.npy')
 
-        # Open second session with
-        with tf.device(device):
-            self._graph_var = tf.Graph()
-            with self._graph_var.as_default():
-                self._nn = Vgg19(model=self._model, input_placeholder=False)
-
-                with tf.Session(graph=self._graph_var, config=config) as self._sess:
-                    self._sess.run(tf.initialize_all_variables())
-
-                    self._conv_layer_tensors = [
-                        self._graph_var.get_tensor_by_name(
-                            self._conv_layer_tensor_names[idx])
-                        for idx in range(self._num_layers)]
-
-                    # Set z_tensor reference
-                    self._z_tensor = self._nn.inputRGB
-
-                    self.optimize_z_tf(phi_z)
+        return phi_z
 
     def optimize_z_tf(self, phi_z):
         """
