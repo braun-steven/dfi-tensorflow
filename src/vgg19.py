@@ -132,15 +132,15 @@ class Vgg19:
                                                 Vgg19.CHANNELS],
                                          minval=0,
                                          maxval=255)
-            atts = load_discrete_lfw_attributes(data_dir)
-            imgs_path = atts['path'].values
-            start_img = reduce_img_size(load_images(*[imgs_path[0]]))[0]
+            # atts = load_discrete_lfw_attributes(data_dir)
+            # imgs_path = atts['path'].values
+            # start_img = reduce_img_size(load_images(*[imgs_path[0]]))[0]
 
-            self._inputRGB = tf.Variable(np.reshape(start_img, newshape=(1,) + start_img.shape),
-                                         dtype=tf.float32,
-                                         name='z_tensor')
-            # self._inputRGB = tf.Variable(rand_img, dtype=tf.float32,
+            # self._inputRGB = tf.Variable(np.reshape(start_img, newshape=(1,) + start_img.shape),
+            #                              dtype=tf.float32,
             #                              name='z_tensor')
+            self._inputRGB = tf.Variable(rand_img, dtype=tf.float32,
+                                         name='z_tensor')
 
         # Convert RGB to BGR order
         # Size: 224x224x3
