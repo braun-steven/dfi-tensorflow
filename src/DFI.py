@@ -163,13 +163,26 @@ class DFI:
                 .minimize(loss, var_list=[self._z_tensor])
 
         elif self.FLAGS.optimizer == 'lbfgs':
+            def p(a):
+                print('loss')
+                print('Loss: {}'.format(a))
+
+            init_op = tf.initialize_all_variables()
+
+            # Actually intialize the variables
+            self._sess.run(init_op)
             print('Using L-BFGS-b')
-            train_op = ScipyOptimizerInterface(loss=loss, var_list=self._z_tensor)
-            train_op.minimize(self._sess)
+            train_op = ScipyOptimizerInterface(loss=loss, var_list=[self._z_tensor],
+                                               method='BFGS',
 
+                                               options={'maxiter': 100,
+                                                        'disp':True})
+            train_op.minimize(self._sess, loss_callback=p, fetches=[loss], )
             z = self._z_tensor.eval()
+            plt.imsave(fname='out.png', arr=z[0])
+            plt.imsave(fname='out_neg.png', arr=np.full([224,224,3], 255, np.float32) - z[0])
 
-            plt.imsave(fname='out.png', arr=z)
+
             return
 
         else:
