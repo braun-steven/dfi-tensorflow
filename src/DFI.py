@@ -160,8 +160,8 @@ class DFI:
 
         # merged = tf.summary.merge_all()
 
-        log_path = 'log/run_k-{}_alpha-{}_feat-{}_lamb-{}_lr-{}'.format(
-            self._k, self._alpha, self._feat, self._lamb, self._lr
+        log_path = 'log/run_k-{}_alpha-{}_feat-{}_lamb-{}_lr-{}_rand-{}'.format(
+            self._k, self._alpha, self._feat, self._lamb, self._lr, self._kwargs['random_start']
         )
         train_writer = tf.train.SummaryWriter(log_path)
 

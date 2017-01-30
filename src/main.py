@@ -29,21 +29,19 @@ def parse_arg():
     parser.add_argument('--list-features', '-l', default=False,
                         action='store_true', help='List all available '
                                                   'features.')
-    parser.add_argument('--tf', default=False, action='store_true',
-                        help="Use Tensorflow for the optimization step")
     parser.add_argument('--optimizer', '-o', type=str, help='Optimizer type')
 
     parser.add_argument('--lr', type=float, default=1,
                         help='Learning rate interval in log10')
-    parser.add_argument('--steps', type=int, default=2000,
+    parser.add_argument('--steps', '-s', type=int, default=2000,
                         help='Number of steps')
-    parser.add_argument('--eps', type=str, help='Epsilon interval in log10')
+    parser.add_argument('--eps', '-e', type=str, help='Epsilon interval in log10')
     parser.add_argument('--tk', help='Use TkInter', default=False, action='store_true')
-    parser.add_argument('--k', help='Number of nearest neighbours', type=int, default=10)
-    parser.add_argument('--alpha', help='Alpha param', type=float, default=0.4)
+    parser.add_argument('--k', '-k', help='Number of nearest neighbours', type=int, default=10)
+    parser.add_argument('--alpha', '-a', help='Alpha param', type=float, default=0.4)
     parser.add_argument('--lamb', help='Lambda param', type=float, default=0.001)
-    parser.add_argument('--rebuild-cache', help='Rebuild the cache', default=False, action='store_true')
-    parser.add_argument('--random-start', help='Use random start_img', default=False, action='store_true')
+    parser.add_argument('--rebuild-cache', '-rc', help='Rebuild the cache', default=False, action='store_true')
+    parser.add_argument('--random-start', '-rs', help='Use random start_img', default=False, action='store_true')
     parser.add_argument('--verbose', '-v', help='Set verbose', default=False, action='store_true')
     args = vars(parser.parse_args())
 
