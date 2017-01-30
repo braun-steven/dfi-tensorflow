@@ -65,7 +65,7 @@ class DFI:
         :return:
         """
         print('Starting DFI')
-
+        self._feat = feat
         # Name-scope for tensorboard
         # Setup        # Set device
 
@@ -160,7 +160,10 @@ class DFI:
 
         # merged = tf.summary.merge_all()
 
-        train_writer = tf.train.SummaryWriter('log')
+        log_path = 'log/run_k-{}_alpha-{}_feat-{}_lamb-{}_lr-{}'.format(
+            self._k, self._alpha, self._feat, self._lamb, self._lr
+        )
+        train_writer = tf.train.SummaryWriter(log_path)
 
         if self._optimizer == 'adam':
             # Add the optimizer
