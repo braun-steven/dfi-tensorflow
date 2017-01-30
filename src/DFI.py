@@ -225,7 +225,7 @@ class DFI:
                 diff_loss = 0.5 * reduce_sum
 
 
-            shape = tf.constant([224,224,3])
+            shape = tf.constant([224,224,3], dtype=tf.float32)
             with tf.name_scope('loss_lower'):
                 loss_lower = -1 * tf.reduce_sum(
                     (z_tensor - tf.abs(z_tensor)) / 2.0) / tf.reduce_prod(shape)
