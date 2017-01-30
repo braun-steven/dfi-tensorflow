@@ -174,10 +174,7 @@ class DFI:
 
             for i in range(self._steps + 1):
                 train_op.run()
-                if i % int(self._steps / 5.0) == 0:
-                    run = self._sess.run(self._z_tensor)
-                    plt.imsave(fname='z_{}.png'.format(i),
-                               arr=run[0])
+
                 if i % math.ceil(self._steps / 100) == 0:
                     temp_loss, diff_loss, tv_loss = \
                         self._sess.run([loss, diff_loss_tensor, tv_loss_tensor])
@@ -190,6 +187,10 @@ class DFI:
                     print('{:>14.10f} - loss'.format(temp_loss))
                     print('{:>14.10f} - tv_loss'.format(tv_loss))
                     print('{:>14.10f} - diff_loss'.format(diff_loss))
+
+                    run = self._sess.run(self._z_tensor)
+                    plt.imsave(fname='z_{}.png'.format(i),
+                               arr=run[0])
 
     def _minimize_z_tensor(self, phi_z_const_tensor, z_tensor):
         """
