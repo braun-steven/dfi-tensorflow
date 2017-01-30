@@ -1,5 +1,5 @@
 import math
-from time import time
+from time import time, strftime, gmtime
 
 import matplotlib as mpl
 import tqdm as tqdm
@@ -149,7 +149,7 @@ class DFI:
 
         log_path = 'log/run_k-{}_alpha-{}_feat-{}_lamb-{}_lr-{}_rand-{}.{}'.format(
             self.FLAGS.k, self.FLAGS.alpha, self.FLAGS.feature, self.FLAGS.lamb,
-            self.FLAGS.lr, self.FLAGS.random_start, time()
+            self.FLAGS.lr, self.FLAGS.random_start, strftime("%Y-%m-%d_%H-%M-%S", gmtime())
         )
         train_writer = tf.train.SummaryWriter(log_path)
 
