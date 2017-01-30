@@ -124,9 +124,11 @@ class DFI:
                                 axis=0)
                             w /= np.linalg.norm(w)
 
+                            inv = -1 if self.FLAGS.invert else 1
+
                             # Calc phi(z)
                             phi = self._phi(start_img)
-                            phi_z = phi + self.FLAGS.alpha * w
+                            phi_z = phi + self.FLAGS.alpha * w * inv
                             np.save('cache.ch', phi_z)
         else:
             print('Loading cached phi_z')
@@ -173,8 +175,6 @@ class DFI:
             self._sess.run(init_op)
             print('Using L-BFGS-b')
             train_op = ScipyOptimizerInterface(loss=loss, var_list=[self._z_tensor],
-                                               method='BFGS',
-
                                                options={'maxiter': 100,
                                                         'disp':True})
             train_op.minimize(self._sess, loss_callback=p, fetches=[loss], )
