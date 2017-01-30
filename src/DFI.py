@@ -20,7 +20,7 @@ class DFI:
     def __init__(self, k=10, alpha=0.4, lamb=0.001, beta=2,
                  model_path="./model/vgg19.npy", num_layers=3,
                  gpu=True, data_dir='./data', optimizer='l-bfgs', lr=None,
-                 eps=None, **kwargs):
+                 eps=None, steps=1000, **kwargs):
         """
         Initialize the DFI procedure
         :param k: Number of nearest neighbours
@@ -45,6 +45,7 @@ class DFI:
         self._optimizer = optimizer
         self._eps = eps
         self._lr = lr
+        self._steps = steps
 
         self._conv_layer_tensor_names = ['conv3_1/Relu:0',
                                          'conv4_1/Relu:0',
@@ -170,27 +171,29 @@ class DFI:
             # now train your model
 
 
-            steps = 1000
-            for i in range(steps + 1):
+            for i in range(self._steps + 1):
                 # fd = {self._nn.inputRGB: [self._z_tensor]}
                 # train_op.run(feed_dict=fd)
                 train_op.run()
-                if i % int(steps / 5.0) == 0:
+                if i % int(self._steps / 5.0) == 0:
                     run = self._sess.run(self._z_tensor)
                     plt.imsave(fname='z_{}.png'.format(i),
                                arr=run[0])
 
-                # summary = self._sess.run(merged, feed_dict=fd)
+                if i % int(self._steps / 100) == 0:
+                    temp_loss, diff_loss, tv_loss = \
+                        self._sess.run([loss, diff_loss_tensor, tv_loss_tensor])
+                    # summary = self._sess.run(merged, feed_dict=fd)
 
-                # train_writer.add_summary(summary, i)
+                    # train_writer.add_summary(summary, i)
+                    print('Step: {}'.format(i))
+                    print('{:>14.10f} - loss'.format(temp_loss))
+                    print('{:>14.10f} - tv_loss'.format(tv_loss))
+                    print('{:>14.10f} - diff_loss'.format(diff_loss))
 
-                temp_loss, diff_loss, tv_loss = \
-                    self._sess.run([loss, diff_loss_tensor, tv_loss_tensor])
 
-                print('Step: {}'.format(i))
-                print('{:>14.10f} - loss'.format(temp_loss))
-                print('{:>14.10f} - tv_loss'.format(tv_loss))
-                print('{:>14.10f} - diff_loss'.format(diff_loss))
+
+
 
     def _minimize_z_tensor(self, phi_z_const_tensor, z_tensor):
         """

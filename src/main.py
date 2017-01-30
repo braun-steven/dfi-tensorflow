@@ -33,8 +33,10 @@ def parse_arg():
                         help="Use Tensorflow for the optimization step")
     parser.add_argument('--optimizer', '-o', type=str, help='Optimizer type')
 
-    parser.add_argument('--lr', type=str,
+    parser.add_argument('--lr', type=int, default=1,
                         help='Learning rate interval in log10')
+    parser.add_argument('--steps', type=int, default=1000,
+                        help='Number of steps')
     parser.add_argument('--eps', type=str, help='Epsilon interval in log10')
 
     args = vars(parser.parse_args())
@@ -63,9 +65,6 @@ def main():
     # Get args
     args = parse_arg()
     pprint(args)
-
-    args['lr'] = 5
-    args['eps'] = 10E-8
 
 
     # Init DFI
