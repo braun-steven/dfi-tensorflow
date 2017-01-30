@@ -224,16 +224,18 @@ class DFI:
             with tf.name_scope('diff_loss'):
                 diff_loss = 0.5 * reduce_sum
 
+
+            shape = tf.constant([224,224,3])
             with tf.name_scope('loss_lower'):
                 loss_lower = -1 * tf.reduce_sum(
-                    (z_tensor - tf.abs(z_tensor)) / 2.0) / tf.reduce_prod(tf.shape(z_tensor))
+                    (z_tensor - tf.abs(z_tensor)) / 2.0) / tf.reduce_prod(shape)
 
             with tf.name_scope('loss_upper'):
                 sub = (z_tensor - 255)
-                loss_upper = tf.reduce_sum((sub + tf.abs(sub)) / 2.0) / tf.reduce_prod(tf.shape(z_tensor))
+                loss_upper = tf.reduce_sum((sub + tf.abs(sub)) / 2.0) / tf.reduce_prod(shape)
 
             with tf.name_scope('loss'):
-                loss = diff_loss + tv_loss
+                loss = diff_loss + tv_loss + loss_upper + loss_lower
 
             self._summaries.append(tf.scalar_summary('loss', loss))
             self._summaries.append(tf.scalar_summary('tv_loss', tv_loss))
