@@ -3,7 +3,7 @@ from time import time
 import math
 import matplotlib as mpl
 
-mpl.use('TkAgg')
+mpl.use('Agg')
 import tensorflow as tf
 from sklearn.neighbors import KNeighborsClassifier
 from utils import *
@@ -163,7 +163,7 @@ class DFI:
         if self._optimizer == 'adam':
             # Add the optimizer
             train_op = tf.train.AdamOptimizer(learning_rate=self._lr) \
-                .minimize(diff_loss_tensor, var_list=[self._z_tensor])
+                .minimize(loss, var_list=[self._z_tensor])
             # Add the ops to initialize variables.  These will include
             # the optimizer slots added by AdamOptimizer().
             init_op = tf.initialize_all_variables()
@@ -214,7 +214,7 @@ class DFI:
             regularization = self._total_variation_regularization(z_tensor,
                                                                   self._beta)
             with tf.name_scope('tv_loss'):
-                tv_loss = self._lamb * tf.reduce_sum(regularization) * 0
+                tv_loss = self._lamb * tf.reduce_sum(regularization)
 
             with tf.name_scope('diff_loss'):
                 diff_loss = 0.5 * reduce_sum
