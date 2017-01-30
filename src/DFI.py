@@ -50,6 +50,7 @@ class DFI:
         self._steps = steps
         self._summaries = []
         self._rebuild_cache = rebuild_cache
+        self._kwargs = kwargs
 
         self._conv_layer_tensor_names = ['conv3_1/Relu:0',
                                          'conv4_1/Relu:0',
@@ -74,7 +75,8 @@ class DFI:
         with tf.device(device):
             self._graph_var = tf.Graph()
             with self._graph_var.as_default():
-                self._nn = Vgg19(model=self._model, input_placeholder=False, data_dir=self._data_dir)
+                self._nn = Vgg19(model=self._model, input_placeholder=False, data_dir=self._data_dir,
+                                 random_start=self._kwargs['random_start'])
 
                 with tf.Session(graph=self._graph_var) as self._sess:
                     self._sess.run(tf.initialize_all_variables())

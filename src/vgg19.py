@@ -98,7 +98,8 @@ class Vgg19:
                  model_save_path=None,
                  model_save_freq=0,
                  input_placeholder=True,
-                 data_dir=None):
+                 data_dir=None,
+                 random_start=True):
         """
         :param model: The model either for back-propagation or
         :param model_save_path: The model path for training process.
@@ -126,21 +127,25 @@ class Vgg19:
 
 
         else:
-            rand_img = tf.random_uniform(shape=[1,
-                                                Vgg19.WIDTH,
-                                                Vgg19.HEIGHT,
-                                                Vgg19.CHANNELS],
-                                         minval=0,
-                                         maxval=255)
-            # atts = load_discrete_lfw_attributes(data_dir)
-            # imgs_path = atts['path'].values
-            # start_img = reduce_img_size(load_images(*[imgs_path[0]]))[0]
+            if random_start:
 
-            # self._inputRGB = tf.Variable(np.reshape(start_img, newshape=(1,) + start_img.shape),
-            #                              dtype=tf.float32,
-            #                              name='z_tensor')
-            self._inputRGB = tf.Variable(rand_img, dtype=tf.float32,
-                                         name='z_tensor')
+                rand_img = tf.random_uniform(shape=[1,
+                                                    Vgg19.WIDTH,
+                                                    Vgg19.HEIGHT,
+                                                    Vgg19.CHANNELS],
+                                             minval=0,
+                                             maxval=255)
+                self._inputRGB = tf.Variable(rand_img, dtype=tf.float32,
+                                             name='z_tensor')
+            else:
+                atts = load_discrete_lfw_attributes(data_dir)
+                imgs_path = atts['path'].values
+                start_img = reduce_img_size(load_images(*[imgs_path[0]]))[0]
+
+                self._inputRGB = tf.Variable(np.reshape(start_img, newshape=(1,) + start_img.shape),
+                                             dtype=tf.float32,
+                                             name='z_tensor')
+
 
         # Convert RGB to BGR order
         # Size: 224x224x3
