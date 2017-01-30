@@ -1,5 +1,6 @@
 from time import time
 
+import math
 import matplotlib as mpl
 
 mpl.use('TkAgg')
@@ -9,6 +10,7 @@ from utils import *
 from vgg19 import Vgg19
 import matplotlib.pyplot as plt
 import os.path
+
 
 class DFI:
     """Deep Feature Interpolation procedure
@@ -46,6 +48,7 @@ class DFI:
         self._eps = eps
         self._lr = lr
         self._steps = steps
+        self._summaries = []
 
         self._conv_layer_tensor_names = ['conv3_1/Relu:0',
                                          'conv4_1/Relu:0',
@@ -168,32 +171,25 @@ class DFI:
 
             # Actually intialize the variables
             self._sess.run(init_op)
-            # now train your model
-
 
             for i in range(self._steps + 1):
-                # fd = {self._nn.inputRGB: [self._z_tensor]}
-                # train_op.run(feed_dict=fd)
                 train_op.run()
                 if i % int(self._steps / 5.0) == 0:
                     run = self._sess.run(self._z_tensor)
                     plt.imsave(fname='z_{}.png'.format(i),
                                arr=run[0])
-
-                if i % int(self._steps / 100) == 0:
+                if i % math.ceil(self._steps / 100) == 0:
                     temp_loss, diff_loss, tv_loss = \
                         self._sess.run([loss, diff_loss_tensor, tv_loss_tensor])
                     # summary = self._sess.run(merged, feed_dict=fd)
-
+                    for sum_op in self._summaries:
+                        summary = self._sess.run(sum_op)
+                        train_writer.add_summary(summary, i)
                     # train_writer.add_summary(summary, i)
                     print('Step: {}'.format(i))
                     print('{:>14.10f} - loss'.format(temp_loss))
                     print('{:>14.10f} - tv_loss'.format(tv_loss))
                     print('{:>14.10f} - diff_loss'.format(diff_loss))
-
-
-
-
 
     def _minimize_z_tensor(self, phi_z_const_tensor, z_tensor):
         """
@@ -208,7 +204,6 @@ class DFI:
             phi_z_prime = self._phi_tensor()
             subtract = phi_z_prime - phi_z_const_tensor
             square = tf.square(subtract)
-            # reduce_sum = tf.reshape(tf.reduce_sum(square), [1])
             reduce_sum = tf.reduce_sum(square)
 
             regularization = self._total_variation_regularization(z_tensor,
@@ -222,9 +217,9 @@ class DFI:
             with tf.name_scope('loss'):
                 loss = diff_loss + tv_loss
 
-            # tf.scalar_summary(['loss'], loss)
-            # tf.scalar_summary(['tv_loss'], tv_loss)
-            # tf.scalar_summary(['diff_loss'], diff_loss)
+            self._summaries.append(tf.scalar_summary('loss', loss))
+            self._summaries.append(tf.scalar_summary('tv_loss', tv_loss))
+            self._summaries.append(tf.scalar_summary('diff_loss', diff_loss))
 
             return loss, diff_loss, tv_loss
 
@@ -265,16 +260,16 @@ class DFI:
             tmp = tf.reshape(self._conv_layer_tensors[i], [-1])
             res = tf.concat(0, [res, tmp])
 
-        tf.scalar_summary('mean0', tf.reduce_mean(self._conv_layer_tensors[0], name='mean0'))
-        tf.scalar_summary('mean1', tf.reduce_mean(self._conv_layer_tensors[1], name='mean1'))
-        tf.scalar_summary('mean2', tf.reduce_mean(self._conv_layer_tensors[2], name='mean2'))
+        self._summaries.append(tf.scalar_summary('mean0', tf.reduce_mean(self._conv_layer_tensors[0], name='mean0')))
+        self._summaries.append(tf.scalar_summary('mean1', tf.reduce_mean(self._conv_layer_tensors[1], name='mean1')))
+        self._summaries.append(tf.scalar_summary('mean2', tf.reduce_mean(self._conv_layer_tensors[2], name='mean2')))
 
         square = tf.square(res)
         reduce_sum = tf.reduce_sum(square, name='phi_tensor_sum')
         sqrt = tf.sqrt(reduce_sum, name='phi_tensor_sqrt')
 
-        tf.scalar_summary('phi_tensor_sum', reduce_sum)
-        tf.scalar_summary('phi_tensor_sqrt', sqrt)
+        self._summaries.append(tf.scalar_summary('phi_tensor_sum', reduce_sum))
+        self._summaries.append(tf.scalar_summary('phi_tensor_sqrt', sqrt))
 
         return res / sqrt
 

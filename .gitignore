@@ -153,3 +153,4 @@ vgg19.npy
 
 *.png
 /cache.ch.npy
+/log/
