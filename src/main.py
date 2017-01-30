@@ -44,6 +44,7 @@ def parse_arg():
     parser.add_argument('--lamb', help='Lambda param', type=float, default=0.001)
     parser.add_argument('--rebuild-cache', help='Rebuild the cache', default=False, action='store_true')
     parser.add_argument('--random-start', help='Use random start_img', default=False, action='store_true')
+    parser.add_argument('--verbose', '-v', help='Set verbose', default=False, action='store_true')
     args = vars(parser.parse_args())
 
     # Check argument constraints

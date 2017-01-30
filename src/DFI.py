@@ -2,6 +2,7 @@ from time import time
 
 import math
 import matplotlib as mpl
+import tqdm as tqdm
 
 mpl.use('Agg')
 import tensorflow as tf
@@ -176,30 +177,36 @@ class DFI:
             # Actually intialize the variables
             self._sess.run(init_op)
 
-            for i in range(self._steps + 1):
+            if self._kwargs['verbose']:
+                it = range(self._steps + 1)
+            else:
+                it = tqdm.tqdm(range(self._steps + 1))
+
+            for i in it:
                 train_op.run()
 
+                # Output 100 summary values
                 if i % math.ceil(self._steps / 100) == 0:
-                    temp_loss, diff_loss, tv_loss = \
-                        self._sess.run([loss, diff_loss_tensor, tv_loss_tensor])
-                    # summary = self._sess.run(merged, feed_dict=fd)
                     for sum_op in self._summaries:
                         summary = self._sess.run(sum_op)
                         train_writer.add_summary(summary, i)
-                    # train_writer.add_summary(summary, i)
-                    print('Step: {}'.format(i))
-                    print('{:>14.10f} - loss'.format(temp_loss))
-                    print('{:>14.10f} - tv_loss'.format(tv_loss))
-                    print('{:>14.10f} - diff_loss'.format(diff_loss))
 
+                    if self._kwargs['verbose']:
+                        temp_loss, diff_loss, tv_loss = \
+                            self._sess.run([loss, diff_loss_tensor, tv_loss_tensor])
+                        # train_writer.add_summary(summary, i)
+                        print('Step: {}'.format(i))
+                        print('{:>14.10f} - loss'.format(temp_loss))
+                        print('{:>14.10f} - tv_loss'.format(tv_loss))
+                        print('{:>14.10f} - diff_loss'.format(diff_loss))
+
+                # Output 10 images
+                if i % math.ceil(self._steps / 10) == 0:
                     im_sum_op = tf.image_summary('img{}'.format(i), tensor=self._z_tensor, name='img'.format(i))
                     im_sum = self._sess.run(im_sum_op)
 
                     train_writer.add_summary(im_sum, global_step=i)
 
-                    run = self._sess.run(self._z_tensor)
-                    plt.imsave(fname='z_{}.png'.format(i),
-                               arr=run[0])
 
     def _minimize_z_tensor(self, phi_z_const_tensor, z_tensor):
         """
