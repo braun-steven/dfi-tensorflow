@@ -152,3 +152,4 @@ pip-selfcheck.json
 vgg19.npy
 
 *.png
+/cache.ch.npy

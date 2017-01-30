@@ -79,8 +79,7 @@ def main():
         exit(0)
 
     # Run
-    dfi.run(feat=args['feature'], person_index=args['person_index'],
-            use_tf=args['tf'])
+    dfi.run(feat=args['feature'], person_index=args['person_index'])
 
 
 if __name__ == '__main__':

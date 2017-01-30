@@ -3,13 +3,12 @@ from time import time
 import matplotlib as mpl
 
 mpl.use('TkAgg')
-
 import tensorflow as tf
 from sklearn.neighbors import KNeighborsClassifier
 from utils import *
 from vgg19 import Vgg19
 import matplotlib.pyplot as plt
-
+import os.path
 
 class DFI:
     """Deep Feature Interpolation procedure
@@ -52,21 +51,7 @@ class DFI:
                                          'conv5_1/Relu:0']
         self._sess = None
 
-        # Set device
-        device = '/gpu:0' if self._gpu else '/cpu:0'
-
-        print('Using device: {}'.format(device))
-
-        # Setup
-        print('Setting up tf.device and tf.Graph')
-        with tf.device(device):
-            self._graph = tf.Graph()
-            with self._graph.as_default():
-                self._nn = Vgg19(model=self._model)
-
-        print('Initialization finished')
-
-    def run(self, feat='No Beard', person_index=0, use_tf=True):
+    def run(self, feat='No Beard', person_index=0):
         """
 
         :param feat: Attribute
@@ -83,43 +68,74 @@ class DFI:
         # config.log_device_placement = True
 
         # Name-scope for tensorboard
-        with tf.name_scope('DFI-Graph') as scope:
-            # Run the graph in the session.
-            with tf.Session(graph=self._graph, config=config) as self._sess:
-                self._sess.run(tf.initialize_all_variables())
+        # Setup        # Set device
+        device = '/gpu:0' if self._gpu else '/cpu:0'
 
-                self._conv_layer_tensors = [
-                    self._graph.get_tensor_by_name(
-                        self._conv_layer_tensor_names[idx])
-                    for idx in range(self._num_layers)]
+        if not os.path.isfile('cache.ch.npy'):
+            print('Using device: {}'.format(device))
+            with tf.device(device):
+                self._graph_ph = tf.Graph()
+                with self._graph_ph.as_default():
+                    self._nn = Vgg19(model=self._model, input_placeholder=True)
 
-                atts = load_discrete_lfw_attributes(self._data_dir)
-                imgs_path = atts['path'].values
-                start_img = reduce_img_size(load_images(*[imgs_path[0]]))[0]
+                    with tf.name_scope('DFI-Graph') as scope:
+                        # Run the graph in the session.
+                        with tf.Session(graph=self._graph_ph, config=config) as self._sess:
+                            self._sess.run(tf.initialize_all_variables())
 
-                # Get image paths
-                pos_paths, neg_paths = self._get_sets(atts, feat, person_index)
+                            self._conv_layer_tensors = [
+                                self._graph_ph.get_tensor_by_name(
+                                    self._conv_layer_tensor_names[idx])
+                                for idx in range(self._num_layers)]
 
-                # Reduce image sizes
-                pos_imgs = reduce_img_size(load_images(*pos_paths))
-                neg_imgs = reduce_img_size(load_images(*neg_paths))
+                            atts = load_discrete_lfw_attributes(self._data_dir)
+                            imgs_path = atts['path'].values
+                            start_img = reduce_img_size(load_images(*[imgs_path[0]]))[0]
 
-                # Get pos/neg deep features
-                pos_deep_features = self._phi(pos_imgs)
-                neg_deep_features = self._phi(neg_imgs)
+                            # Get image paths
+                            pos_paths, neg_paths = self._get_sets(atts, feat, person_index)
 
-                # Calc W
-                w = np.mean(pos_deep_features, axis=0) - np.mean(
-                    neg_deep_features,
-                    axis=0)
-                w /= np.linalg.norm(w)
+                            # Reduce image sizes
+                            pos_imgs = reduce_img_size(load_images(*pos_paths))
+                            neg_imgs = reduce_img_size(load_images(*neg_paths))
 
-                # Calc phi(z)
-                phi_z = self._phi(start_img) + self._alpha * w
+                            # Get pos/neg deep features
+                            pos_deep_features = self._phi(pos_imgs)
+                            neg_deep_features = self._phi(neg_imgs)
 
-                self.optimize_z_tf(phi_z, start_img)
+                            # Calc W
+                            w = np.mean(pos_deep_features, axis=0) - np.mean(
+                                neg_deep_features,
+                                axis=0)
+                            w /= np.linalg.norm(w)
 
-    def optimize_z_tf(self, phi_z, start_img):
+                            # Calc phi(z)
+                            phi_z = self._phi(start_img) + self._alpha * w
+                            np.save('cache.ch', phi_z)
+        else:
+            print('Loading cached phi_z')
+            phi_z = np.load('cache.ch.npy')
+
+        # Open second session with
+        with tf.device(device):
+            self._graph_var = tf.Graph()
+            with self._graph_var.as_default():
+                self._nn = Vgg19(model=self._model, input_placeholder=False)
+
+                with tf.Session(graph=self._graph_var, config=config) as self._sess:
+                    self._sess.run(tf.initialize_all_variables())
+
+                    self._conv_layer_tensors = [
+                        self._graph_var.get_tensor_by_name(
+                            self._conv_layer_tensor_names[idx])
+                        for idx in range(self._num_layers)]
+
+                    # Set z_tensor reference
+                    self._z_tensor = self._nn.inputRGB
+
+                    self.optimize_z_tf(phi_z)
+
+    def optimize_z_tf(self, phi_z):
         """
 
         :param phi_z: phi(start_img) + alpha*w
@@ -129,25 +145,22 @@ class DFI:
 
         phi_z_const_tensor = tf.constant(phi_z, dtype=tf.float32,
                                          name='phi_x_alpha_w')
-        # Variable which is to be optimized
-        rand_img = np.random.rand(224, 224, 3) * 255
-        z_tensor = tf.Variable(rand_img, dtype=tf.float32, name='z_tensor')
-        tf.summary.image('imgs', tf.reshape(z_tensor, [
-            1] + z_tensor.get_shape().as_list(), name='imgs'))
+
+        # tf.summary.image('imgs', tf.reshape(z_tensor, [
+        #     1] + z_tensor.get_shape().as_list(), name='imgs'))
 
         # Define loss
         loss, diff_loss_tensor, tv_loss_tensor = self._minimize_z_tensor(
-            phi_z_const_tensor, z_tensor)
+            phi_z_const_tensor, self._z_tensor)
 
-        merged = tf.summary.merge_all()
+        # merged = tf.summary.merge_all()
 
         train_writer = tf.train.SummaryWriter('log')
 
         if self._optimizer == 'adam':
             # Add the optimizer
-            train_op = tf.train.AdamOptimizer(epsilon=self._eps,
-                                              learning_rate=self._lr).minimize(
-                loss, var_list=[z_tensor])
+            train_op = tf.train.GradientDescentOptimizer(learning_rate=self._lr) \
+                .minimize(diff_loss_tensor, var_list=[self._z_tensor])
             # Add the ops to initialize variables.  These will include
             # the optimizer slots added by AdamOptimizer().
             init_op = tf.initialize_all_variables()
@@ -159,25 +172,25 @@ class DFI:
 
             steps = 1000
             for i in range(steps + 1):
-                z_prime = self._sess.run(z_tensor)
-                fd = {self._nn.inputRGB: [z_prime]}
-                train_op.run(feed_dict=fd)
+                # fd = {self._nn.inputRGB: [self._z_tensor]}
+                # train_op.run(feed_dict=fd)
+                train_op.run()
                 if i % int(steps / 5.0) == 0:
+                    run = self._sess.run(self._z_tensor)
                     plt.imsave(fname='z_{}.png'.format(i),
-                               arr=self._sess.run(z_tensor))
+                               arr=run[0])
 
-                summary = self._sess.run(merged, feed_dict=fd)
+                # summary = self._sess.run(merged, feed_dict=fd)
 
-                train_writer.add_summary(summary, i)
+                # train_writer.add_summary(summary, i)
 
                 temp_loss, diff_loss, tv_loss = \
-                    self._sess.run([loss, diff_loss_tensor, tv_loss_tensor],
-                                   feed_dict=fd)
+                    self._sess.run([loss, diff_loss_tensor, tv_loss_tensor])
 
                 print('Step: {}'.format(i))
-                print('{:>10.4f} - loss'.format(temp_loss[0]))
-                print('{:>10.4f} - tv_loss'.format(tv_loss[0]))
-                print('{:>10.4f} - diff_loss'.format(diff_loss[0]))
+                print('{:>14.10f} - loss'.format(temp_loss))
+                print('{:>14.10f} - tv_loss'.format(tv_loss))
+                print('{:>14.10f} - diff_loss'.format(diff_loss))
 
     def _minimize_z_tensor(self, phi_z_const_tensor, z_tensor):
         """
@@ -192,12 +205,13 @@ class DFI:
             phi_z_prime = self._phi_tensor()
             subtract = phi_z_prime - phi_z_const_tensor
             square = tf.square(subtract)
-            reduce_sum = tf.reshape(tf.reduce_sum(square), [1])
+            # reduce_sum = tf.reshape(tf.reduce_sum(square), [1])
+            reduce_sum = tf.reduce_sum(square)
 
             regularization = self._total_variation_regularization(z_tensor,
                                                                   self._beta)
             with tf.name_scope('tv_loss'):
-                tv_loss = self._lamb * regularization
+                tv_loss = self._lamb * tf.reduce_sum(regularization) * 0
 
             with tf.name_scope('diff_loss'):
                 diff_loss = 0.5 * reduce_sum
@@ -205,9 +219,9 @@ class DFI:
             with tf.name_scope('loss'):
                 loss = diff_loss + tv_loss
 
-            tf.scalar_summary(['loss'], loss)
-            tf.scalar_summary(['tv_loss'], tv_loss)
-            tf.scalar_summary(['diff_loss'], diff_loss)
+            # tf.scalar_summary(['loss'], loss)
+            # tf.scalar_summary(['tv_loss'], tv_loss)
+            # tf.scalar_summary(['diff_loss'], diff_loss)
 
             return loss, diff_loss, tv_loss
 
@@ -231,8 +245,8 @@ class DFI:
 
     def _conv2d(self, x, W, strides=[1, 1, 1, 1], p='SAME', name=None):
         """2d Convolution"""
-        new_shape = tf.TensorShape([tf.Dimension(1)] + x.get_shape().dims)
-        x = tf.reshape(x, new_shape)
+        # new_shape = tf.TensorShape([tf.Dimension(1)] + x.get_shape().dims)
+        # x = tf.reshape(x, new_shape)
         return tf.nn.conv2d(x, W, strides=strides, padding=p, name=name)
 
     def _phi_tensor(self):

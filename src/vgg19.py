@@ -94,7 +94,8 @@ class Vgg19:
     def __init__(self,
                  model=None,
                  model_save_path=None,
-                 model_save_freq=0):
+                 model_save_freq=0,
+                 input_placeholder=True):
         """
         :param model: The model either for back-propagation or
         :param model_save_path: The model path for training process.
@@ -110,13 +111,21 @@ class Vgg19:
         self._train_labels = tf.placeholder(tf.float32,
                                             [None, 1000])
 
-        # Define the input placeholder with RGB channels.
-        # Size: 224x224x3
-        self._inputRGB = tf.placeholder(tf.float32,
-                                        [None,
-                                         Vgg19.WIDTH,
-                                         Vgg19.HEIGHT,
-                                         Vgg19.CHANNELS])
+        if input_placeholder == True:
+
+            # Define the input placeholder with RGB channels.
+            # Size: 224x224x3
+            self._inputRGB = tf.placeholder(tf.float32,
+                                            [None,
+                                             Vgg19.WIDTH,
+                                             Vgg19.HEIGHT,
+                                             Vgg19.CHANNELS])
+
+
+        else:
+            rand_img = tf.random_uniform(shape=[1, 224, 224, 3], minval=0, maxval=255)
+            self._inputRGB = tf.Variable(rand_img, dtype=tf.float32,
+                                         name='z_tensor')
 
         # Convert RGB to BGR order
         # Size: 224x224x3
