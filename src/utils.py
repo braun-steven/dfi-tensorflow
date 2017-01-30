@@ -1,5 +1,6 @@
 import numpy as np
 import pandas
+from scipy.misc import imresize
 from scipy import ndimage
 
 
@@ -57,9 +58,11 @@ def load_discrete_lfw_attributes(data_dir):
 
 
 def reduce_img_size(imgs):
-    for idx, img in enumerate(imgs):
-        imgs[idx] = img[13:-13, 13:-13]
-    return imgs
+    cropped = [img[50:-50,50:-50] for img in imgs]
+    resized = [imresize(img, (224,224)) for img in cropped]
+    # for idx, img in enumerate(imgs):
+    #     imgs[idx] = img[13:-13, 13:-13]
+    return resized
 
 
 def load_model(model_path):

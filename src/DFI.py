@@ -56,6 +56,7 @@ class DFI:
 
         device = '/gpu:0' if self.FLAGS.gpu else '/cpu:0'
         phi_z = self._get_phi_z_const(device, feat, person_index)
+
         # Open second session with
         with tf.device(device):
             self._graph_var = tf.Graph()
@@ -145,8 +146,8 @@ class DFI:
 
         # merged = tf.summary.merge_all()
 
-        log_path = 'log/run_k-{}_alpha-{}_feat-{}_lamb-{}_lr-{}_rand-{}'.format(
-            self.FLAGS.k, self.FLAGS.alpha, self.FLAGS.feature, self.FLAGS.lamb, self.FLAGS.lr, self.FLAGS.random_start
+        log_path = 'log/run_k-{}_alpha-{}_feat-{}_lamb-{}_lr-{}_rand-{}.{}'.format(
+            self.FLAGS.k, self.FLAGS.alpha, self.FLAGS.feature, self.FLAGS.lamb, self.FLAGS.lr, self.FLAGS.random_start, time()
         )
         train_writer = tf.train.SummaryWriter(log_path)
 

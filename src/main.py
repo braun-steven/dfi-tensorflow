@@ -49,15 +49,15 @@ def parse_arg():
     # Check argument constraints
     if args.num_layers not in np.arange(1, 4):
         raise argparse.ArgumentTypeError(
-            "%s is an invalid int value. (1 <= n <= 3)" % args['num_layers'])
+            "%s is an invalid int value. (1 <= n <= 3)" % args.num_layers)
 
     if not os.path.exists(args.data_dir):
         raise argparse.ArgumentTypeError(
-            "Directory %s does not exist." % args['data_dir'])
+            "Directory %s does not exist." % args.data_dir)
 
     if not os.path.exists(args.model_path):
         raise argparse.ArgumentTypeError(
-            "%File s does not exist." % args['model_path'])
+            "%File s does not exist." % args.model_path)
 
     return args
 
