@@ -39,22 +39,23 @@ def parse_arg():
     parser.add_argument('--tk', help='Use TkInter', default=False, action='store_true')
     parser.add_argument('--k', '-k', help='Number of nearest neighbours', type=int, default=10)
     parser.add_argument('--alpha', '-a', help='Alpha param', type=float, default=0.4)
+    parser.add_argument('--beta', '-b', help='Beta param', type=float, default=2)
     parser.add_argument('--lamb', help='Lambda param', type=float, default=0.001)
     parser.add_argument('--rebuild-cache', '-rc', help='Rebuild the cache', default=False, action='store_true')
     parser.add_argument('--random-start', '-rs', help='Use random start_img', default=False, action='store_true')
     parser.add_argument('--verbose', '-v', help='Set verbose', default=False, action='store_true')
-    args = vars(parser.parse_args())
+    args = parser.parse_args()
 
     # Check argument constraints
-    if args['num_layers'] not in np.arange(1, 4):
+    if args.num_layers not in np.arange(1, 4):
         raise argparse.ArgumentTypeError(
             "%s is an invalid int value. (1 <= n <= 3)" % args['num_layers'])
 
-    if not os.path.exists(args['data_dir']):
+    if not os.path.exists(args.data_dir):
         raise argparse.ArgumentTypeError(
             "Directory %s does not exist." % args['data_dir'])
 
-    if not os.path.exists(args['model_path']):
+    if not os.path.exists(args.model_path):
         raise argparse.ArgumentTypeError(
             "%File s does not exist." % args['model_path'])
 
@@ -67,28 +68,20 @@ def main():
     :return: None
     """
     # Get args
-    args = parse_arg()
-    pprint(args)
-
-    # Set matplotlib backend
-    import matplotlib as mpl
-    if args['tk']:
-        mpl.use('TkAgg')
-    else:
-        mpl.use('Agg')
+    FLAGS = parse_arg()
 
     # Init DFI
     print('Creating DFI Object')
-    dfi = DFI(**args)
+    dfi = DFI(FLAGS)
 
     # List features
-    if args['list_features']:
+    if FLAGS.list_features:
         print('Available features to select:')
         print(' - ' + '\n - '.join(sorted(dfi.features())))
         exit(0)
 
     # Run
-    dfi.run(feat=args['feature'], person_index=args['person_index'])
+    dfi.run(feat=FLAGS.feature, person_index=FLAGS.person_index)
 
 
 if __name__ == '__main__':

@@ -19,10 +19,7 @@ class DFI:
     https://arxiv.org/pdf/1611.05507v1.pdf
     """
 
-    def __init__(self, k=10, alpha=0.4, lamb=0.001, beta=2,
-                 model_path="./model/vgg19.npy", num_layers=3,
-                 gpu=True, data_dir='./data', optimizer='l-bfgs', lr=None,
-                 eps=None, steps=1000, rebuild_cache=False, **kwargs):
+    def __init__(self, FLAGS):
         """
         Initialize the DFI procedure
         :param k: Number of nearest neighbours
@@ -35,22 +32,10 @@ class DFI:
         :param gpu: Compute or gpu
         :param data_dir: Directory for images
         """
-        self._k = k
-        self._alpha = alpha
-        self._beta = beta
-        self._lamb = lamb
-        self._num_layers = num_layers
-        self._model = load_model(model_path)
-        self._gpu = gpu
+        self._model = load_model(FLAGS.model_path)
         self._conv_layer_tensors = []
-        self._data_dir = data_dir
-        self._optimizer = optimizer
-        self._eps = eps
-        self._lr = lr
-        self._steps = steps
         self._summaries = []
-        self._rebuild_cache = rebuild_cache
-        self._kwargs = kwargs
+        self.FLAGS = FLAGS
 
         self._conv_layer_tensor_names = ['conv3_1/Relu:0',
                                          'conv4_1/Relu:0',
@@ -69,15 +54,15 @@ class DFI:
         # Name-scope for tensorboard
         # Setup        # Set device
 
-        device = '/gpu:0' if self._gpu else '/cpu:0'
+        device = '/gpu:0' if self.FLAGS.gpu else '/cpu:0'
         phi_z = self._get_phi_z_const(device, feat, person_index)
         # Open second session with
         with tf.device(device):
             self._graph_var = tf.Graph()
             with self._graph_var.as_default():
                 self._nn = Vgg19(model=self._model, input_placeholder=False,
-                                 data_dir=self._data_dir,
-                                 random_start=self._kwargs['random_start'])
+                                 data_dir=self.FLAGS.data_dir,
+                                 random_start=self.FLAGS.random_start)
 
                 with tf.Session(graph=self._graph_var) as self._sess:
                     self._sess.run(tf.initialize_all_variables())
@@ -85,7 +70,7 @@ class DFI:
                     self._conv_layer_tensors = [
                         self._graph_var.get_tensor_by_name(
                             self._conv_layer_tensor_names[idx])
-                        for idx in range(self._num_layers)]
+                        for idx in range(self.FLAGS.num_layers)]
 
                     # Set z_tensor reference
                     self._z_tensor = self._nn.inputRGB
@@ -93,7 +78,7 @@ class DFI:
                     self.optimize_z_tf(phi_z)
 
     def _get_phi_z_const(self, device, feat, person_index):
-        if self._rebuild_cache or not os.path.isfile('cache.ch.npy'):
+        if self.FLAGS.rebuild_cache or not os.path.isfile('cache.ch.npy'):
             print('Using device: {}'.format(device))
             with tf.device(device):
                 self._graph_ph = tf.Graph()
@@ -108,9 +93,9 @@ class DFI:
                             self._conv_layer_tensors = [
                                 self._graph_ph.get_tensor_by_name(
                                     self._conv_layer_tensor_names[idx])
-                                for idx in range(self._num_layers)]
+                                for idx in range(self.FLAGS.num_layers)]
 
-                            atts = load_discrete_lfw_attributes(self._data_dir)
+                            atts = load_discrete_lfw_attributes(self.FLAGS.data_dir)
                             imgs_path = atts['path'].values
                             start_img = \
                                 reduce_img_size(load_images(*[imgs_path[0]]))[0]
@@ -135,7 +120,7 @@ class DFI:
 
                             # Calc phi(z)
                             phi = self._phi(start_img)
-                            phi_z = phi + self._alpha * w
+                            phi_z = phi + self.FLAGS.alpha * w
                             np.save('cache.ch', phi_z)
         else:
             print('Loading cached phi_z')
@@ -161,13 +146,13 @@ class DFI:
         # merged = tf.summary.merge_all()
 
         log_path = 'log/run_k-{}_alpha-{}_feat-{}_lamb-{}_lr-{}_rand-{}'.format(
-            self._k, self._alpha, self._feat, self._lamb, self._lr, self._kwargs['random_start']
+            self.FLAGS.k, self.FLAGS.alpha, self.FLAGS.feature, self.FLAGS.lamb, self.FLAGS.lr, self.FLAGS.random_start
         )
         train_writer = tf.train.SummaryWriter(log_path)
 
-        if self._optimizer == 'adam':
+        if self.FLAGS.optimizer == 'adam':
             # Add the optimizer
-            train_op = tf.train.AdamOptimizer(learning_rate=self._lr) \
+            train_op = tf.train.AdamOptimizer(learning_rate=self.FLAGS.lr) \
                 .minimize(loss, var_list=[self._z_tensor])
             # Add the ops to initialize variables.  These will include
             # the optimizer slots added by AdamOptimizer().
@@ -176,21 +161,21 @@ class DFI:
             # Actually intialize the variables
             self._sess.run(init_op)
 
-            if self._kwargs['verbose']:
-                it = range(self._steps + 1)
+            if self.FLAGS.verbose:
+                it = range(self.FLAGS.steps + 1)
             else:
-                it = tqdm.tqdm(range(self._steps + 1))
+                it = tqdm.tqdm(range(self.FLAGS.steps + 1))
 
             for i in it:
                 train_op.run()
 
                 # Output 100 summary values
-                if i % math.ceil(self._steps / 100) == 0:
+                if i % math.ceil(self.FLAGS.steps / 100) == 0:
                     for sum_op in self._summaries:
                         summary = self._sess.run(sum_op)
                         train_writer.add_summary(summary, i)
 
-                    if self._kwargs['verbose']:
+                    if self.FLAGS.verbose:
                         temp_loss, diff_loss, tv_loss = \
                             self._sess.run(
                                 [loss, diff_loss_tensor, tv_loss_tensor])
@@ -201,7 +186,7 @@ class DFI:
                         print('{:>14.10f} - diff_loss'.format(diff_loss))
 
                 # Output 10 images
-                if i % math.ceil(self._steps / 10) == 0:
+                if i % math.ceil(self.FLAGS.steps / 10) == 0:
                     tensor = self._z_tensor
                     min = tf.reduce_min(tensor)
                     max = tf.reduce_max(tensor)
@@ -229,9 +214,9 @@ class DFI:
             reduce_sum = tf.reduce_sum(square)
 
             regularization = self._total_variation_regularization(z_tensor,
-                                                                  self._beta)
+                                                                  self.FLAGS.beta)
             with tf.name_scope('tv_loss'):
-                tv_loss = self._lamb * tf.reduce_sum(regularization)
+                tv_loss = self.FLAGS.lamb * tf.reduce_sum(regularization)
 
             with tf.name_scope('diff_loss'):
                 diff_loss = 0.5 * reduce_sum
@@ -278,7 +263,7 @@ class DFI:
         res = tf.reshape(self._conv_layer_tensors[0], [-1], name='phi_z')
 
         # Concatenate the rest
-        for i in np.arange(1, self._num_layers):
+        for i in np.arange(1, self.FLAGS.num_layers):
             tmp = tf.reshape(self._conv_layer_tensors[i], [-1])
             res = tf.concat(0, [res, tmp])
 
@@ -323,7 +308,7 @@ class DFI:
             phi_img = np.array([])
 
             # Append all layer results to a (M,) vector
-            for layer_idx in range(self._num_layers):
+            for layer_idx in range(self.FLAGS.num_layers):
                 phi_img = np.append(phi_img,
                                     ret[layer_idx][img_idx].reshape(-1))
 
@@ -372,7 +357,7 @@ class DFI:
         knn = KNeighborsClassifier(n_jobs=4)
         dummy_target = [0 for x in range(subset.shape[0])]
         knn.fit(X=subset.as_matrix(), y=dummy_target)
-        knn_indices = knn.kneighbors(person.as_matrix(), n_neighbors=self._k,
+        knn_indices = knn.kneighbors(person.as_matrix(), n_neighbors=self.FLAGS.k,
                                      return_distance=False)[0]
 
         neighbor_paths = paths.iloc[knn_indices]
@@ -385,7 +370,7 @@ class DFI:
         :return: List of attributes
         """
 
-        atts = load_lfw_attributes(self._data_dir)
+        atts = load_lfw_attributes(self.FLAGS.data_dir)
         del atts['path']
         del atts['person']
         return atts.columns.values
