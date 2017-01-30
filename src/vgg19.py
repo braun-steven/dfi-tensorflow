@@ -126,7 +126,7 @@ class Vgg19:
 
         else:
             rand_img = tf.random_uniform(shape=[1, 224, 224, 3], minval=0, maxval=255)
-            atts = load_discrete_lfw_attributes('/home/tak/dfi-tensorflow/data')
+            atts = load_discrete_lfw_attributes('data')
             imgs_path = atts['path'].values
             start_img = reduce_img_size(load_images(*[imgs_path[0]]))[0]
 

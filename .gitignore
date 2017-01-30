@@ -155,3 +155,4 @@ vgg19.npy
 /cache.ch.npy
 /log/
 /src/log/
+/src/cache.ch.npy

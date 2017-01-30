@@ -151,8 +151,6 @@ class DFI:
         phi_z_const_tensor = tf.constant(phi_z, dtype=tf.float32,
                                          name='phi_x_alpha_w')
 
-        # tf.summary.image('imgs', tf.reshape(z_tensor, [
-        #     1] + z_tensor.get_shape().as_list(), name='imgs'))
 
         # Define loss
         loss, diff_loss_tensor, tv_loss_tensor = self._minimize_z_tensor(
@@ -188,6 +186,11 @@ class DFI:
                     print('{:>14.10f} - loss'.format(temp_loss))
                     print('{:>14.10f} - tv_loss'.format(tv_loss))
                     print('{:>14.10f} - diff_loss'.format(diff_loss))
+
+                    im_sum_op = tf.image_summary('img{}'.format(i), tf.reshape(self._z_tensor, [1] + self._z_tensor.get_shape().as_list(), name='img'.format(i)))
+                    im_sum = self._sess.run(im_sum_op)
+
+                    train_writer.add_summary(im_sum, global_step=i)
 
                     run = self._sess.run(self._z_tensor)
                     plt.imsave(fname='z_{}.png'.format(i),
