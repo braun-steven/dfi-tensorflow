@@ -163,7 +163,7 @@ class DFI:
 
         if self._optimizer == 'adam':
             # Add the optimizer
-            train_op = tf.train.GradientDescentOptimizer(learning_rate=self._lr) \
+            train_op = tf.train.AdamOptimizer(learning_rate=self._lr) \
                 .minimize(diff_loss_tensor, var_list=[self._z_tensor])
             # Add the ops to initialize variables.  These will include
             # the optimizer slots added by AdamOptimizer().

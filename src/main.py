@@ -38,7 +38,7 @@ def parse_arg():
     parser.add_argument('--steps', type=int, default=1000,
                         help='Number of steps')
     parser.add_argument('--eps', type=str, help='Epsilon interval in log10')
-
+    parser.add_argument('--tk', type=bool, help='Use TkInter', default=False, action='store_true')
     args = vars(parser.parse_args())
 
     # Check argument constraints
@@ -66,6 +66,12 @@ def main():
     args = parse_arg()
     pprint(args)
 
+    # Set matplotlib backend
+    import matplotlib as mpl
+    if args['tk']:
+        mpl.use('TkAgg')
+    else:
+        mpl.use('Agg')
 
     # Init DFI
     print('Creating DFI Object')
