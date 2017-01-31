@@ -38,6 +38,7 @@ class DFI:
         self._conv_layer_tensors = []
         self._summaries = []
         self.FLAGS = FLAGS
+        self.i = 0
 
         self._conv_layer_tensor_names = ['conv3_1/Relu:0',
                                          'conv4_1/Relu:0',
@@ -170,9 +171,23 @@ class DFI:
                 .minimize(loss, var_list=[self._z_tensor])
 
         elif self.FLAGS.optimizer == 'lbfgs':
-            def p(a):
-                print('loss')
-                print('Loss: {}'.format(a))
+            def cb(a):
+                # Output 100 summary values
+                if self.i % math.ceil(self.FLAGS.steps / 100) == 0:
+                    for sum_op in self._summaries:
+                        summary = self._sess.run(sum_op)
+                        train_writer.add_summary(summary, self.i)
+
+                # Output 10 images
+                if self.i % math.ceil(self.FLAGS.steps / 10) == 0:
+
+                    im_sum_op = tf.image_summary('img{}'.format(self.i),
+                                                 tensor=rescaled_img,
+                                                 name='img{}'.format(self.i))
+                    im_sum = self._sess.run(im_sum_op)
+
+                    train_writer.add_summary(im_sum, global_step=self.i)
+                self.i += 1
 
             init_op = tf.initialize_all_variables()
 
@@ -180,49 +195,49 @@ class DFI:
             self._sess.run(init_op)
             print('Using L-BFGS-b')
             train_op = ScipyOptimizerInterface(loss=loss, var_list=[self._z_tensor],
-                                               options={'maxiter': 100,
-                                                        'disp':True})
-            train_op.minimize(self._sess, loss_callback=p, fetches=[loss], )
+                                               options={'maxiter': self.FLAGS.steps,
+                                                        'disp':True,
+                                                        'gtol':10E-16})
+            train_op.minimize(self._sess, step_callback=cb, fetches=[loss], )
             z = self._z_tensor.eval()
             plt.imsave(fname='out.png', arr=z[0])
             plt.imsave(fname='out_neg.png', arr=np.full([224,224,3], 255, np.float32) - z[0])
 
-
             return
 
-            if self.FLAGS.verbose:
-                it = range(self.FLAGS.steps + 1)
-            else:
-                it = tqdm.tqdm(range(self.FLAGS.steps + 1))
+        if self.FLAGS.verbose:
+            it = range(self.FLAGS.steps + 1)
+        else:
+            it = tqdm.tqdm(range(self.FLAGS.steps + 1))
 
-            for i in it:
-                train_op.run()
+        for i in it:
+            train_op.run()
 
-                # Output 100 summary values
-                if i % math.ceil(self.FLAGS.steps / 100) == 0:
-                    for sum_op in self._summaries:
-                        summary = self._sess.run(sum_op)
-                        train_writer.add_summary(summary, i)
+            # Output 100 summary values
+            if i % math.ceil(self.FLAGS.steps / 100) == 0:
+                for sum_op in self._summaries:
+                    summary = self._sess.run(sum_op)
+                    train_writer.add_summary(summary, i)
 
-                    if self.FLAGS.verbose:
-                        temp_loss, diff_loss, tv_loss = \
-                            self._sess.run(
-                                [loss, diff_loss_tensor, tv_loss_tensor])
-                        # train_writer.add_summary(summary, i)
-                        print('Step: {}'.format(i))
-                        print('{:>14.10f} - loss'.format(temp_loss))
-                        print('{:>14.10f} - tv_loss'.format(tv_loss))
-                        print('{:>14.10f} - diff_loss'.format(diff_loss))
+                if self.FLAGS.verbose:
+                    temp_loss, diff_loss, tv_loss = \
+                        self._sess.run(
+                            [loss, diff_loss_tensor, tv_loss_tensor])
+                    # train_writer.add_summary(summary, i)
+                    print('Step: {}'.format(i))
+                    print('{:>14.10f} - loss'.format(temp_loss))
+                    print('{:>14.10f} - tv_loss'.format(tv_loss))
+                    print('{:>14.10f} - diff_loss'.format(diff_loss))
 
-                # Output 10 images
-                if i % math.ceil(self.FLAGS.steps / 10) == 0:
+            # Output 10 images
+            if i % math.ceil(self.FLAGS.steps / 10) == 0:
 
-                    im_sum_op = tf.image_summary('img{}'.format(i),
-                                                 tensor=rescaled_img,
-                                                 name='img'.format(i))
-                    im_sum = self._sess.run(im_sum_op)
+                im_sum_op = tf.image_summary('img{}'.format(i),
+                                             tensor=rescaled_img,
+                                             name='img{}'.format(i))
+                im_sum = self._sess.run(im_sum_op)
 
-                    train_writer.add_summary(im_sum, global_step=i)
+                train_writer.add_summary(im_sum, global_step=i)
         else:
             raise Exception('Unknown optimizer: {}'.format(self.FLAGS.optimizer))
 
@@ -440,7 +455,7 @@ class DFI:
         paths = subset['path']
         del subset['path']
 
-        knn = KNeighborsClassifier(n_jobs=4)
+        knn = KNeighborsClassifier(n_jobs=-1)
         dummy_target = [0 for x in range(subset.shape[0])]
         knn.fit(X=subset.as_matrix(), y=dummy_target)
         knn_indices = \
