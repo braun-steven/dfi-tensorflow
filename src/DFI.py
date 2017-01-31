@@ -5,6 +5,7 @@ import matplotlib as mpl
 import tqdm as tqdm
 
 mpl.use('Agg')
+import matplotlib.pyplot as plt
 import tensorflow as tf
 from sklearn.neighbors import KNeighborsClassifier
 from utils import *
@@ -102,6 +103,8 @@ class DFI:
                             start_img = \
                                 reduce_img_size(load_images(*[imgs_path[0]]))[0]
 
+                            plt.imsave(fname='start_img.png', arr=start_img)
+
                             # Get image paths
                             pos_paths, neg_paths = self._get_sets(atts, feat,
                                                                   person_index)
@@ -140,6 +143,11 @@ class DFI:
 
         phi_z_const_tensor = tf.constant(phi_z, dtype=tf.float32,
                                          name='phi_x_alpha_w')
+
+        tensor = self._z_tensor
+        min = tf.reduce_min(tensor)
+        max = tf.reduce_max(tensor)
+        rescaled_img = 255 * (tensor - min) / (max - min)
 
         # Define loss
         loss, diff_loss_tensor, tv_loss_tensor = self._minimize_z_tensor(
@@ -190,16 +198,17 @@ class DFI:
 
                 # Output 10 images
                 if i % math.ceil(self.FLAGS.steps / 10) == 0:
-                    tensor = self._z_tensor
-                    min = tf.reduce_min(tensor)
-                    max = tf.reduce_max(tensor)
-                    rescaled_img = 255 * (tensor - min) / (max - min)
+
                     im_sum_op = tf.image_summary('img{}'.format(i),
                                                  tensor=rescaled_img,
                                                  name='img'.format(i))
                     im_sum = self._sess.run(im_sum_op)
 
                     train_writer.add_summary(im_sum, global_step=i)
+
+        # Store image
+
+        plt.imsave(fname='start_img.png', arr=rescaled_img.eval())
 
     def _minimize_z_tensor(self, phi_z_const_tensor, z_tensor):
         """
