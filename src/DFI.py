@@ -3,6 +3,7 @@ from time import time, strftime, gmtime
 
 import matplotlib as mpl
 import tqdm as tqdm
+from tensorflow.contrib.opt import ScipyOptimizerInterface
 
 mpl.use('Agg')
 import matplotlib.pyplot as plt
@@ -123,9 +124,11 @@ class DFI:
                                 axis=0)
                             w /= np.linalg.norm(w)
 
+                            inv = -1 if self.FLAGS.invert else 1
+
                             # Calc phi(z)
                             phi = self._phi(start_img)
-                            phi_z = phi + self.FLAGS.alpha * w
+                            phi_z = phi + self.FLAGS.alpha * w * inv
                             np.save('cache.ch', phi_z)
         else:
             print('Loading cached phi_z')
@@ -165,12 +168,27 @@ class DFI:
             # Add the optimizer
             train_op = tf.train.AdamOptimizer(learning_rate=self.FLAGS.lr) \
                 .minimize(loss, var_list=[self._z_tensor])
-            # Add the ops to initialize variables.  These will include
-            # the optimizer slots added by AdamOptimizer().
+
+        elif self.FLAGS.optimizer == 'lbfgs':
+            def p(a):
+                print('loss')
+                print('Loss: {}'.format(a))
+
             init_op = tf.initialize_all_variables()
 
             # Actually intialize the variables
             self._sess.run(init_op)
+            print('Using L-BFGS-b')
+            train_op = ScipyOptimizerInterface(loss=loss, var_list=[self._z_tensor],
+                                               options={'maxiter': 100,
+                                                        'disp':True})
+            train_op.minimize(self._sess, loss_callback=p, fetches=[loss], )
+            z = self._z_tensor.eval()
+            plt.imsave(fname='out.png', arr=z[0])
+            plt.imsave(fname='out_neg.png', arr=np.full([224,224,3], 255, np.float32) - z[0])
+
+
+            return
 
             if self.FLAGS.verbose:
                 it = range(self.FLAGS.steps + 1)
@@ -205,10 +223,55 @@ class DFI:
                     im_sum = self._sess.run(im_sum_op)
 
                     train_writer.add_summary(im_sum, global_step=i)
+        else:
+            raise Exception('Unknown optimizer: {}'.format(self.FLAGS.optimizer))
+
+        # Add the ops to initialize variables.  These will include
+        # the optimizer slots added by AdamOptimizer().
+        init_op = tf.initialize_all_variables()
+
+        # Actually intialize the variables
+        self._sess.run(init_op)
+
+        if self.FLAGS.verbose:
+            it = range(self.FLAGS.steps + 1)
+        else:
+            it = tqdm.tqdm(range(self.FLAGS.steps + 1))
+
+        for i in it:
+            train_op.run()
+
+            # Output 100 summary values
+            if i % math.ceil(self.FLAGS.steps / 100) == 0:
+                for sum_op in self._summaries:
+                    summary = self._sess.run(sum_op)
+                    train_writer.add_summary(summary, i)
+
+                if self.FLAGS.verbose:
+                    temp_loss, diff_loss, tv_loss = \
+                        self._sess.run(
+                            [loss, diff_loss_tensor, tv_loss_tensor])
+                    # train_writer.add_summary(summary, i)
+                    print('Step: {}'.format(i))
+                    print('{:>14.10f} - loss'.format(temp_loss))
+                    print('{:>14.10f} - tv_loss'.format(tv_loss))
+                    print('{:>14.10f} - diff_loss'.format(diff_loss))
+
+            # Output 10 images
+            if i % math.ceil(self.FLAGS.steps / 10) == 0:
+                tensor = self._z_tensor
+                min = tf.reduce_min(tensor)
+                max = tf.reduce_max(tensor)
+                rescaled_img = 255 * (tensor - min) / (max - min)
+                im_sum_op = tf.image_summary('img{}'.format(i),
+                                             tensor=rescaled_img,
+                                             name='img'.format(i))
+                im_sum = self._sess.run(im_sum_op)
+
+                train_writer.add_summary(im_sum, global_step=i)
 
         # Store image
-
-        plt.imsave(fname='start_img.png', arr=rescaled_img.eval())
+        plt.imsave(fname='out.png', arr=rescaled_img.eval())
 
     def _minimize_z_tensor(self, phi_z_const_tensor, z_tensor):
         """
@@ -233,8 +296,7 @@ class DFI:
             with tf.name_scope('diff_loss'):
                 diff_loss = 0.5 * reduce_sum
 
-
-            shape = tf.constant([224,224,3], dtype=tf.float32)
+            shape = tf.constant([224, 224, 3], dtype=tf.float32)
             with tf.name_scope('loss_lower'):
                 loss_lower = -1 * tf.reduce_sum(
                     (z_tensor - tf.abs(z_tensor)) / 2.0) / tf.reduce_prod(shape)

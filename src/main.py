@@ -44,6 +44,7 @@ def parse_arg():
     parser.add_argument('--rebuild-cache', '-rc', help='Rebuild the cache', default=False, action='store_true')
     parser.add_argument('--random-start', '-rs', help='Use random start_img', default=False, action='store_true')
     parser.add_argument('--verbose', '-v', help='Set verbose', default=False, action='store_true')
+    parser.add_argument('--invert', '-i', help='Invert deep feature difference (No Beard -> Beard)', default=False, action='store_true')
     args = parser.parse_args()
 
     # Check argument constraints
