@@ -210,37 +210,6 @@ class DFI:
         else:
             it = tqdm.tqdm(range(self.FLAGS.steps + 1))
 
-        for i in it:
-            train_op.run()
-
-            # Output 100 summary values
-            if i % math.ceil(self.FLAGS.steps / 100) == 0:
-                for sum_op in self._summaries:
-                    summary = self._sess.run(sum_op)
-                    train_writer.add_summary(summary, i)
-
-                if self.FLAGS.verbose:
-                    temp_loss, diff_loss, tv_loss = \
-                        self._sess.run(
-                            [loss, diff_loss_tensor, tv_loss_tensor])
-                    # train_writer.add_summary(summary, i)
-                    print('Step: {}'.format(i))
-                    print('{:>14.10f} - loss'.format(temp_loss))
-                    print('{:>14.10f} - tv_loss'.format(tv_loss))
-                    print('{:>14.10f} - diff_loss'.format(diff_loss))
-
-            # Output 10 images
-            if i % math.ceil(self.FLAGS.steps / 10) == 0:
-
-                im_sum_op = tf.image_summary('img{}'.format(i),
-                                             tensor=rescaled_img,
-                                             name='img{}'.format(i))
-                im_sum = self._sess.run(im_sum_op)
-
-                train_writer.add_summary(im_sum, global_step=i)
-        else:
-            raise Exception('Unknown optimizer: {}'.format(self.FLAGS.optimizer))
-
         # Add the ops to initialize variables.  These will include
         # the optimizer slots added by AdamOptimizer().
         init_op = tf.initialize_all_variables()
