@@ -230,8 +230,10 @@ class DFI:
         for i in it:
             if i < 2000:
                 train_op.run(feed_dict={lr:self.FLAGS.lr})
-            else:
+            elif 2000 <= i < 4000:
                 train_op.run(feed_dict={lr:self.FLAGS.lr/3.0})
+            elif 4000 <= i:
+                train_op.run(feed_dict={lr:self.FLAGS.lr/9.0})
 
             self._log_step(i, train_writer, rescaled_img_tensor, loss,
                            diff_loss_tensor, tv_loss_tensor)  # Store image
