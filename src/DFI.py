@@ -67,7 +67,7 @@ class DFI:
                 self._nn = Vgg19(model=self._model, input_placeholder=False,
                                  data_dir=self.FLAGS.data_dir,
                                  random_start=self.FLAGS.random_start,
-                                 img_path=self.FLAGS.person_image)
+                                 start_image_path=self.FLAGS.person_image)
 
                 with tf.Session(graph=self._graph_var) as self._sess:
                     self._sess.run(tf.initialize_all_variables())
@@ -96,7 +96,7 @@ class DFI:
                 self._graph_ph = tf.Graph()
                 with self._graph_ph.as_default():
                     self._nn = Vgg19(model=self._model, input_placeholder=True,
-                                     img_path=self.FLAGS.person_image)
+                                     start_image_path=self.FLAGS.person_image)
 
                     with tf.name_scope('DFI-Graph') as scope:
                         # Run the graph in the session.
