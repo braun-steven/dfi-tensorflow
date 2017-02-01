@@ -1,7 +1,9 @@
+import math
+
 import numpy as np
 import pandas
-from scipy.misc import imresize
 from scipy import ndimage
+from scipy.misc import imresize
 
 
 def load_images(*paths):
@@ -44,13 +46,16 @@ def load_lfw_attributes(data_dir):
     del df['imagenum']
     return df
 
+
 def get_person_idx_by_path(df, path):
     """Gets the index of a given person image"""
     try:
         index = df[df['path'] == path].index.tolist()[0]
     except Exception:
-        raise Exception('Image with the path {} could not be found'.format(path))
+        raise Exception(
+            'Image with the path {} could not be found'.format(path))
     return index
+
 
 def load_discrete_lfw_attributes(data_dir):
     """Loads the discretized lfw attributes
@@ -68,10 +73,18 @@ def load_discrete_lfw_attributes(data_dir):
 
 
 def reduce_img_size(imgs):
-    cropped = [img[50:-50,50:-50] for img in imgs]
-    resized = [imresize(img, (224,224)) for img in cropped]
-    # for idx, img in enumerate(imgs):
-    #     imgs[idx] = img[13:-13, 13:-13]
+    # Scale to 150:
+
+    H = imgs[0].shape[0]
+
+    # Difference to 150 per side
+    d = math.ceil((H - 150) / 2.0)
+
+    # Size of the output image (
+    Hp, Wp = 224, 224
+
+    cropped = [img[d:-d, d:-d] for img in imgs]
+    resized = [imresize(img, (Hp, Wp)) for img in cropped]
     return resized
 
 

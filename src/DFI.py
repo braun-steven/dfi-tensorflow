@@ -183,10 +183,14 @@ class DFI:
         )
         train_writer = tf.train.SummaryWriter(log_path)
 
+        lr = tf.placeholder(dtype=tf.float32, shape=None, name='learning_rate')
+
+        feed_dict = {lr: self.FLAGS.lr}
+
         # Add the optimizer
         if self.FLAGS.optimizer == 'adam':
             ### ADAM ###
-            train_op = tf.train.AdamOptimizer(learning_rate=self.FLAGS.lr) \
+            train_op = tf.train.AdamOptimizer(learning_rate=lr) \
                 .minimize(loss, var_list=[self._z_tensor])
 
         elif self.FLAGS.optimizer == 'lbfgs':
@@ -224,7 +228,10 @@ class DFI:
             it = tqdm.tqdm(range(self.FLAGS.steps + 1))
 
         for i in it:
-            train_op.run()
+            if i < 2000:
+                train_op.run(feed_dict={lr:self.FLAGS.lr})
+            else:
+                train_op.run(feed_dict={lr:self.FLAGS.lr/3.0})
 
             self._log_step(i, train_writer, rescaled_img_tensor, loss,
                            diff_loss_tensor, tv_loss_tensor)  # Store image
