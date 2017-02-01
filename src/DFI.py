@@ -109,9 +109,16 @@ class DFI:
                             atts = load_discrete_lfw_attributes(
                                 self.FLAGS.data_dir)
                             imgs_path = atts['path'].values
-                            start_img = \
-                                reduce_img_size(load_images(*[imgs_path[0]]))[0]
 
+                            if self.FLAGS.person_image:
+                                start_img_path = self.FLAGS.person_image
+                            else:
+                                start_img_path = imgs_path[self.FLAGS.person_index]
+
+                            person_index = get_person_idx_by_path(atts, start_img_path)
+
+                            start_img = \
+                                reduce_img_size(load_images(*[start_img_path]))[0]
                             plt.imsave(fname='start_img.png', arr=start_img)
 
                             # Get image paths
@@ -166,11 +173,11 @@ class DFI:
         loss, diff_loss_tensor, tv_loss_tensor = self._minimize_z_tensor(
             phi_z_const_tensor, self._z_tensor)
 
-
         # Logging
         log_path = 'log/run_k-{}_alpha-{}_feat-{}_lamb-{}_lr-{}_rand-{}_opt-{}.{}'.format(
             self.FLAGS.k, self.FLAGS.alpha, self.FLAGS.feature, self.FLAGS.lamb,
-            self.FLAGS.lr, self.FLAGS.random_start, self.FLAGS.optimizer, strftime("%Y-%m-%d_%H-%M-%S", gmtime())
+            self.FLAGS.lr, self.FLAGS.random_start, self.FLAGS.optimizer,
+            strftime("%Y-%m-%d_%H-%M-%S", gmtime())
         )
         train_writer = tf.train.SummaryWriter(log_path)
 
@@ -191,10 +198,12 @@ class DFI:
             # Init
             init_op = tf.initialize_all_variables()
             self._sess.run(init_op)
-            train_op = ScipyOptimizerInterface(loss=loss, var_list=[self._z_tensor],
-                                               options={'maxiter': self.FLAGS.steps,
-                                                        #'disp':True,
-                                                        'gtol':10E-16})
+            train_op = ScipyOptimizerInterface(loss=loss,
+                                               var_list=[self._z_tensor],
+                                               options={
+                                                   'maxiter': self.FLAGS.steps,
+                                                   # 'disp':True,
+                                                   'gtol': 10E-16})
             train_op.minimize(self._sess, loss_callback=lbfgs_cb)
             self._save_output(rescaled_img_tensor)
             return
@@ -216,7 +225,7 @@ class DFI:
             train_op.run()
 
             self._log_step(i, train_writer, rescaled_img_tensor, loss,
-                           diff_loss_tensor, tv_loss_tensor)# Store image
+                           diff_loss_tensor, tv_loss_tensor)  # Store image
         self._save_output(rescaled_img_tensor)
 
     def _save_output(self, rescaled_img_tensor):
@@ -282,7 +291,8 @@ class DFI:
 
             with tf.name_scope('loss_upper'):
                 sub = (z_tensor - 255)
-                loss_upper = tf.reduce_sum((sub + tf.abs(sub)) / 2.0) / tf.reduce_prod(shape)
+                loss_upper = tf.reduce_sum(
+                    (sub + tf.abs(sub)) / 2.0) / tf.reduce_prod(shape)
 
             with tf.name_scope('loss'):
                 loss = diff_loss + tv_loss + loss_upper + loss_lower

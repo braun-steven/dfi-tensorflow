@@ -26,6 +26,9 @@ def load_lfw_attributes(data_dir):
 
     paths = []
 
+    if data_dir.endswith('/'):
+        data_dir = data_dir[:-1]
+
     for idx, row in df.iterrows():
         name = row[0]
         img_idx = str(row[1])
@@ -41,6 +44,13 @@ def load_lfw_attributes(data_dir):
     del df['imagenum']
     return df
 
+def get_person_idx_by_path(df, path):
+    """Gets the index of a given person image"""
+    try:
+        index = df[df['path'] == path].index.tolist()[0]
+    except Exception:
+        raise Exception('Image with the path {} could not be found'.format(path))
+    return index
 
 def load_discrete_lfw_attributes(data_dir):
     """Loads the discretized lfw attributes

@@ -26,6 +26,8 @@ def parse_arg():
                         help='Name of the Feature.')
     parser.add_argument('--person-index', '-p', default=0, type=int,
                         help="Index of the start image.")
+    parser.add_argument('--person-image', default='lfw-deepfunneled/Aaron_Eckhart/Aaron_Eckhart_0001.jpg', type=str,
+                        help="Start image path.")
     parser.add_argument('--list-features', '-l', default=False,
                         action='store_true', help='List all available '
                                                   'features.')
