@@ -99,7 +99,8 @@ class Vgg19:
                  model_save_freq=0,
                  input_placeholder=True,
                  data_dir=None,
-                 random_start=True):
+                 random_start=True,
+                 img_path=0):
         """
         :param model: The model either for back-propagation or
         :param model_save_path: The model path for training process.
@@ -141,7 +142,8 @@ class Vgg19:
             else:
                 atts = load_discrete_lfw_attributes(data_dir)
                 imgs_path = atts['path'].values
-                start_img = reduce_img_size(load_images(*[imgs_path[0]]))[0]
+                path_ = imgs_path
+                start_img = reduce_img_size(load_images(*[path_]))[0]
 
                 self._inputRGB = tf.Variable(np.reshape(start_img, newshape=(1,) + start_img.shape),
                                              dtype=tf.float32,
