@@ -82,6 +82,13 @@ class DFI:
                     self.optimize_z_tf(phi_z)
 
     def _get_phi_z_const(self, device, feat, person_index):
+        """
+        Calculates the constant phi(z) = phi(x) + alpha * w
+        :param device: Cpu or gpu
+        :param feat: feature
+        :param person_index: person
+        :return: phi(z) = phi(x) + alpha * w
+        """
         if self.FLAGS.rebuild_cache or not os.path.isfile('cache.ch.npy'):
             print('Using device: {}'.format(device))
             with tf.device(device):
@@ -151,7 +158,7 @@ class DFI:
         tensor = self._z_tensor
         min = tf.reduce_min(tensor)
         max = tf.reduce_max(tensor)
-        rescaled_img = 255 * (tensor - min) / (max - min)
+        rescaled_img_tensor = 255 * (tensor - min) / (max - min)
 
         # Define loss
         loss, diff_loss_tensor, tv_loss_tensor = self._minimize_z_tensor(
@@ -159,9 +166,9 @@ class DFI:
 
         # merged = tf.summary.merge_all()
 
-        log_path = 'log/run_k-{}_alpha-{}_feat-{}_lamb-{}_lr-{}_rand-{}.{}'.format(
+        log_path = 'log/run_k-{}_alpha-{}_feat-{}_lamb-{}_lr-{}_rand-{}_opt-{}.{}'.format(
             self.FLAGS.k, self.FLAGS.alpha, self.FLAGS.feature, self.FLAGS.lamb,
-            self.FLAGS.lr, self.FLAGS.random_start, strftime("%Y-%m-%d_%H-%M-%S", gmtime())
+            self.FLAGS.lr, self.FLAGS.random_start, self.FLAGS.optimizer, strftime("%Y-%m-%d_%H-%M-%S", gmtime())
         )
         train_writer = tf.train.SummaryWriter(log_path)
 
@@ -171,7 +178,7 @@ class DFI:
                 .minimize(loss, var_list=[self._z_tensor])
 
         elif self.FLAGS.optimizer == 'lbfgs':
-            def cb(a):
+            def cb():
                 # Output 100 summary values
                 if self.i % math.ceil(self.FLAGS.steps / 100) == 0:
                     for sum_op in self._summaries:
@@ -182,7 +189,7 @@ class DFI:
                 if self.i % math.ceil(self.FLAGS.steps / 10) == 0:
 
                     im_sum_op = tf.image_summary('img{}'.format(self.i),
-                                                 tensor=rescaled_img,
+                                                 tensor=rescaled_img_tensor,
                                                  name='img{}'.format(self.i))
                     im_sum = self._sess.run(im_sum_op)
 
@@ -196,12 +203,15 @@ class DFI:
             print('Using L-BFGS-b')
             train_op = ScipyOptimizerInterface(loss=loss, var_list=[self._z_tensor],
                                                options={'maxiter': self.FLAGS.steps,
-                                                        'disp':True,
+                                                        #'disp':True,
                                                         'gtol':10E-16})
-            train_op.minimize(self._sess, step_callback=cb, fetches=[loss], )
-            z = self._z_tensor.eval()
-            plt.imsave(fname='out.png', arr=z[0])
-            plt.imsave(fname='out_neg.png', arr=np.full([224,224,3], 255, np.float32) - z[0])
+            train_op.minimize(self._sess, loss_callback=cb)
+            z = self._z_tensor.eval()[0]
+            atts = load_discrete_lfw_attributes(self.FLAGS.data_dir)
+            imgs_path = atts['path'].values
+            start_img = reduce_img_size(load_images(*[imgs_path[0]]))[0]
+            plt.imsave(fname='out.png', arr=z)
+            plt.imsave(fname='out_neg.png', arr=np.full([224,224,3], 255, np.float32) - z)
 
             return
 
@@ -226,7 +236,7 @@ class DFI:
             train_op.run()
 
             # Output 100 summary values
-            if i % math.ceil(self.FLAGS.steps / 100) == 0:
+            if i % math.ceil(self.FLAGS.steps / 100.0) == 0:
                 for sum_op in self._summaries:
                     summary = self._sess.run(sum_op)
                     train_writer.add_summary(summary, i)
@@ -241,21 +251,18 @@ class DFI:
                     print('{:>14.10f} - tv_loss'.format(tv_loss))
                     print('{:>14.10f} - diff_loss'.format(diff_loss))
 
-            # Output 10 images
-            if i % math.ceil(self.FLAGS.steps / 10) == 0:
-                tensor = self._z_tensor
-                min = tf.reduce_min(tensor)
-                max = tf.reduce_max(tensor)
-                rescaled_img = 255 * (tensor - min) / (max - min)
+            # Output 4 images
+            if i % math.ceil(self.FLAGS.steps / 4.0) == 0:
                 im_sum_op = tf.image_summary('img{}'.format(i),
-                                             tensor=rescaled_img,
+                                             tensor=rescaled_img_tensor,
                                              name='img'.format(i))
                 im_sum = self._sess.run(im_sum_op)
 
                 train_writer.add_summary(im_sum, global_step=i)
 
         # Store image
-        plt.imsave(fname='out.png', arr=rescaled_img.eval())
+        plt.imsave(fname='out.png', arr=rescaled_img_tensor.eval()[0])
+        plt.imsave(fname='out_unscaled.png', arr=self._z_tensor.eval()[0])
 
     def _minimize_z_tensor(self, phi_z_const_tensor, z_tensor):
         """
@@ -300,7 +307,7 @@ class DFI:
 
             return loss, diff_loss, tv_loss
 
-    def _total_variation_regularization(self, x, beta=1):
+    def _total_variation_regularization(self, x, beta=2):
         """
         Idea from:
         https://github.com/antlerros/tensorflow-fast-neuralstyle/blob/master/net.py
@@ -337,19 +344,9 @@ class DFI:
             tmp = tf.reshape(self._conv_layer_tensors[i], [-1])
             res = tf.concat(0, [res, tmp])
 
-        self._summaries.append(tf.scalar_summary('mean0', tf.reduce_mean(
-            self._conv_layer_tensors[0], name='mean0')))
-        self._summaries.append(tf.scalar_summary('mean1', tf.reduce_mean(
-            self._conv_layer_tensors[1], name='mean1')))
-        self._summaries.append(tf.scalar_summary('mean2', tf.reduce_mean(
-            self._conv_layer_tensors[2], name='mean2')))
-
         square = tf.square(res)
         reduce_sum = tf.reduce_sum(square, name='phi_tensor_sum')
         sqrt = tf.sqrt(reduce_sum, name='phi_tensor_sqrt')
-
-        self._summaries.append(tf.scalar_summary('phi_tensor_sum', reduce_sum))
-        self._summaries.append(tf.scalar_summary('phi_tensor_sqrt', sqrt))
 
         return res / sqrt
 
