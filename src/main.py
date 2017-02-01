@@ -49,6 +49,8 @@ def parse_arg():
     parser.add_argument('--invert', '-i', help='Invert deep feature difference (No Beard -> Beard)', default=False, action='store_true')
     args = parser.parse_args()
 
+    args.feature = args.feature.replace('_', ' ')
+
     # Check argument constraints
     if args.num_layers not in np.arange(1, 4):
         raise argparse.ArgumentTypeError(
