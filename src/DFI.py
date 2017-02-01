@@ -186,7 +186,8 @@ class DFI:
         lr = tf.placeholder(dtype=tf.float32, shape=None, name='learning_rate')
 
         feed_dict = {lr: self.FLAGS.lr}
-
+        loss_print = tf.Variable(initial_value=0, trainable=False, name='loss_print')
+        self._summaries.append(tf.scalar_summary('loss_print', loss_print))
         # Add the optimizer
         if self.FLAGS.optimizer == 'adam':
             ### ADAM ###
@@ -199,6 +200,9 @@ class DFI:
                 """Callback for lbfgs loss step"""
                 self._log_step(self.i, train_writer, rescaled_img_tensor, loss,
                                diff_loss_tensor, tv_loss_tensor)
+
+                if self.i % math.ceil(self.FLAGS.steps / 100.0):
+                    self._sess.run(loss_print.assign(l))
                 self.i += 1
 
             # Init
@@ -212,7 +216,10 @@ class DFI:
                                                    'gtol': 10E-16})
 
             def step_callback(z_eval):
-                self._z_tensor.assign(np.reshape(z_eval, (1, 224, 224, 3)))
+                if self.i % math.ceil(self.FLAGS.steps / 10.0):
+
+                    self._sess.run(self._z_tensor.assign(np.reshape(z_eval, (1, 224, 224, 3))))
+
 
             train_op.minimize(self._sess,
                               step_callback=step_callback,
