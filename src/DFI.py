@@ -193,15 +193,9 @@ class DFI:
             train_op = tf.train.AdamOptimizer(learning_rate=lr) \
                 .minimize(loss, var_list=[self._z_tensor])
 
-        if self.FLAGS.optimizer == 'momentum':
-            train_op = tf.train.MomentumOptimizer(learning_rate=lr,
-                                                  momentum=0.9).minimize(
-                loss, var_list=[self._z_tensor]
-            )
-
         elif self.FLAGS.optimizer == 'lbfgs':
             ### L-BFGS-B ###
-            def lbfgs_cb():
+            def lbfgs_cb(l):
                 """Callback for lbfgs loss step"""
                 self._log_step(self.i, train_writer, rescaled_img_tensor, loss,
                                diff_loss_tensor, tv_loss_tensor)
@@ -216,7 +210,14 @@ class DFI:
                                                    'maxiter': self.FLAGS.steps,
                                                    # 'disp':True,
                                                    'gtol': 10E-16})
-            train_op.minimize(self._sess, loss_callback=lbfgs_cb)
+
+            def step_callback(z_eval):
+                self._z_tensor.assign(np.reshape(z_eval, (1, 224, 224, 3)))
+
+            train_op.minimize(self._sess,
+                              step_callback=step_callback,
+                              loss_callback=lbfgs_cb,
+                              fetches=[loss])
             self._save_output(rescaled_img_tensor)
             return
 
@@ -275,7 +276,6 @@ class DFI:
                                          tensor=rescaled_img_tensor,
                                          name='img{}'.format(i))
             im_sum = self._sess.run(im_sum_op)
-
             train_writer.add_summary(im_sum, global_step=i)
 
     def _minimize_z_tensor(self, phi_z_const_tensor, z_tensor):
