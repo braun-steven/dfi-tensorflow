@@ -152,9 +152,11 @@ class DFI:
         :return:
         """
 
+        # Init constant tensor
         phi_z_const_tensor = tf.constant(phi_z, dtype=tf.float32,
                                          name='phi_x_alpha_w')
 
+        # Rescale image
         tensor = self._z_tensor
         min = tf.reduce_min(tensor)
         max = tf.reduce_max(tensor)
@@ -164,61 +166,38 @@ class DFI:
         loss, diff_loss_tensor, tv_loss_tensor = self._minimize_z_tensor(
             phi_z_const_tensor, self._z_tensor)
 
-        # merged = tf.summary.merge_all()
 
+        # Logging
         log_path = 'log/run_k-{}_alpha-{}_feat-{}_lamb-{}_lr-{}_rand-{}_opt-{}.{}'.format(
             self.FLAGS.k, self.FLAGS.alpha, self.FLAGS.feature, self.FLAGS.lamb,
             self.FLAGS.lr, self.FLAGS.random_start, self.FLAGS.optimizer, strftime("%Y-%m-%d_%H-%M-%S", gmtime())
         )
         train_writer = tf.train.SummaryWriter(log_path)
 
+        # Add the optimizer
         if self.FLAGS.optimizer == 'adam':
-            # Add the optimizer
+            ### ADAM ###
             train_op = tf.train.AdamOptimizer(learning_rate=self.FLAGS.lr) \
                 .minimize(loss, var_list=[self._z_tensor])
 
         elif self.FLAGS.optimizer == 'lbfgs':
-            def cb():
-                # Output 100 summary values
-                if self.i % math.ceil(self.FLAGS.steps / 100) == 0:
-                    for sum_op in self._summaries:
-                        summary = self._sess.run(sum_op)
-                        train_writer.add_summary(summary, self.i)
-
-                # Output 10 images
-                if self.i % math.ceil(self.FLAGS.steps / 10) == 0:
-
-                    im_sum_op = tf.image_summary('img{}'.format(self.i),
-                                                 tensor=rescaled_img_tensor,
-                                                 name='img{}'.format(self.i))
-                    im_sum = self._sess.run(im_sum_op)
-
-                    train_writer.add_summary(im_sum, global_step=self.i)
+            ### L-BFGS-B ###
+            def lbfgs_cb():
+                """Callback for lbfgs loss step"""
+                self._log_step(self.i, train_writer, rescaled_img_tensor, loss,
+                               diff_loss_tensor, tv_loss_tensor)
                 self.i += 1
 
+            # Init
             init_op = tf.initialize_all_variables()
-
-            # Actually intialize the variables
             self._sess.run(init_op)
-            print('Using L-BFGS-b')
             train_op = ScipyOptimizerInterface(loss=loss, var_list=[self._z_tensor],
                                                options={'maxiter': self.FLAGS.steps,
                                                         #'disp':True,
                                                         'gtol':10E-16})
-            train_op.minimize(self._sess, loss_callback=cb)
-            z = self._z_tensor.eval()[0]
-            atts = load_discrete_lfw_attributes(self.FLAGS.data_dir)
-            imgs_path = atts['path'].values
-            start_img = reduce_img_size(load_images(*[imgs_path[0]]))[0]
-            plt.imsave(fname='out.png', arr=z)
-            plt.imsave(fname='out_neg.png', arr=np.full([224,224,3], 255, np.float32) - z)
-
+            train_op.minimize(self._sess, loss_callback=lbfgs_cb)
+            self._save_output(rescaled_img_tensor)
             return
-
-        if self.FLAGS.verbose:
-            it = range(self.FLAGS.steps + 1)
-        else:
-            it = tqdm.tqdm(range(self.FLAGS.steps + 1))
 
         # Add the ops to initialize variables.  These will include
         # the optimizer slots added by AdamOptimizer().
@@ -227,6 +206,7 @@ class DFI:
         # Actually intialize the variables
         self._sess.run(init_op)
 
+        # If verbose, display loss per step, else show progress
         if self.FLAGS.verbose:
             it = range(self.FLAGS.steps + 1)
         else:
@@ -235,34 +215,42 @@ class DFI:
         for i in it:
             train_op.run()
 
-            # Output 100 summary values
-            if i % math.ceil(self.FLAGS.steps / 100.0) == 0:
-                for sum_op in self._summaries:
-                    summary = self._sess.run(sum_op)
-                    train_writer.add_summary(summary, i)
+            self._log_step(i, train_writer, rescaled_img_tensor, loss,
+                           diff_loss_tensor, tv_loss_tensor)# Store image
+        self._save_output(rescaled_img_tensor)
 
-                if self.FLAGS.verbose:
-                    temp_loss, diff_loss, tv_loss = \
-                        self._sess.run(
-                            [loss, diff_loss_tensor, tv_loss_tensor])
-                    # train_writer.add_summary(summary, i)
-                    print('Step: {}'.format(i))
-                    print('{:>14.10f} - loss'.format(temp_loss))
-                    print('{:>14.10f} - tv_loss'.format(tv_loss))
-                    print('{:>14.10f} - diff_loss'.format(diff_loss))
-
-            # Output 4 images
-            if i % math.ceil(self.FLAGS.steps / 4.0) == 0:
-                im_sum_op = tf.image_summary('img{}'.format(i),
-                                             tensor=rescaled_img_tensor,
-                                             name='img'.format(i))
-                im_sum = self._sess.run(im_sum_op)
-
-                train_writer.add_summary(im_sum, global_step=i)
-
-        # Store image
+    def _save_output(self, rescaled_img_tensor):
+        """Stores the output img in out.png"""
         plt.imsave(fname='out.png', arr=rescaled_img_tensor.eval()[0])
         plt.imsave(fname='out_unscaled.png', arr=self._z_tensor.eval()[0])
+
+    def _log_step(self, i, train_writer, rescaled_img_tensor, loss,
+                  diff_loss_tensor, tv_loss_tensor):
+        """Logs the intermediate values of the optimization step"""
+        # Output 100 summary values
+        if i % math.ceil(self.FLAGS.steps / 100.0) == 0:
+            for sum_op in self._summaries:
+                summary = self._sess.run(sum_op)
+                train_writer.add_summary(summary, i)
+
+            if self.FLAGS.verbose:
+                temp_loss, diff_loss, tv_loss = \
+                    self._sess.run(
+                        [loss, diff_loss_tensor, tv_loss_tensor])
+                # train_writer.add_summary(summary, i)
+                print('Step: {}'.format(i))
+                print('{:>14.10f} - loss'.format(temp_loss))
+                print('{:>14.10f} - tv_loss'.format(tv_loss))
+                print('{:>14.10f} - diff_loss'.format(diff_loss))
+
+        # Output 4 images
+        if i % math.ceil(self.FLAGS.steps / 4.0) == 0:
+            im_sum_op = tf.image_summary('img{}'.format(i),
+                                         tensor=rescaled_img_tensor,
+                                         name='img{}'.format(i))
+            im_sum = self._sess.run(im_sum_op)
+
+            train_writer.add_summary(im_sum, global_step=i)
 
     def _minimize_z_tensor(self, phi_z_const_tensor, z_tensor):
         """
