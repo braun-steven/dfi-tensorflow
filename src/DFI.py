@@ -193,6 +193,12 @@ class DFI:
             train_op = tf.train.AdamOptimizer(learning_rate=lr) \
                 .minimize(loss, var_list=[self._z_tensor])
 
+        if self.FLAGS.optimizer == 'momentum':
+            train_op = tf.train.MomentumOptimizer(learning_rate=lr,
+                                                  momentum=0.9).minimize(
+                loss, var_list=[self._z_tensor]
+            )
+
         elif self.FLAGS.optimizer == 'lbfgs':
             ### L-BFGS-B ###
             def lbfgs_cb():
