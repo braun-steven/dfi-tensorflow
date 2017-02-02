@@ -51,7 +51,7 @@ In these pictures a setting with the following parameters were used
 <img src="./outputs/mouth_open_alpha0.4_k100/Schroeder.png" width="175">
 <img src="./outputs/mouth_open_alpha0.4_k100/Bush.png" width="175">
 
-### Smiling
+### Asian
 <img src="./outputs/smiling_alpha0.4_k100/Berlusconi.png" width="175">
 <img src="./outputs/smiling_alpha0.4_k100/Trump.png" width="175">
 <img src="./outputs/smiling_alpha0.4_k100/Schroeder.png" width="175">
