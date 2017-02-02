@@ -38,6 +38,12 @@ In these pictures a setting with the following parameters were used
 ![](./outputs/female_alpha0.4_k100/Schroeder.png)
 ![](./outputs/female_alpha0.4_k100/Bush.png)
 
+### Heavy Makeup
+![](./outputs/heavy_makeup_alpha0.4_k100/Berlusconi.png)
+![](./outputs/heavy_makeup_alpha0.4_k100/Trump.png)
+![](./outputs/heavy_makeup_alpha0.4_k100/Schroeder.png)
+![](./outputs/heavy_makeup_alpha0.4_k100/Bush.png)
+
 ### Mouth wide open
 ![](./outputs/mouth_open_alpha0.4_k100/Berlusconi.png)
 ![](./outputs/mouth_open_alpha0.4_k100/Trump.png)
@@ -50,16 +56,22 @@ In these pictures a setting with the following parameters were used
 ![](./outputs/smiling_alpha0.4_k100/Schroeder.png)
 ![](./outputs/smiling_alpha0.4_k100/Bush.png)
 
+### Smiling
+![](./outputs/asian_alpha0.4_k100/Berlusconi.png)
+![](./outputs/asian_alpha0.4_k100/Trump.png)
+![](./outputs/asian_alpha0.4_k100/Schroeder.png)
+![](./outputs/asian_alpha0.4_k100/Bush.png)
+
 
 
 ## Setup
-### Model
+#### Model
 Download the VGG19 model from [here](https://mega.nz/#!xZ8glS6J!MAnE91ND_WyfZ_8mvkuSa2YcA7q-1ehfSm-Q1fxOvvs)
 
-### Data
+#### Data
 Download the LFW-Dataset from [here](http://vis-www.cs.umass.edu/lfw/lfw-deepfunneled.tgz)
 
-### Python environment
+#### Python environment
 Make sure you have `virtualenv` installed  
 Run:
 ```bash
@@ -67,7 +79,7 @@ $ virtualenv -p /usr/bin/python3 env         # Create virtual python environment
 $ ./env/bin/pip install -r requirements.txt  # Install all necessary requirements
 ```
 
-### Enable GPU usage
+#### Enable GPU usage
 Follow [these instructions](http://www.computervisionbytecnalia.com/es/2016/06/deep-learning-development-setup-for-ubuntu-16-04-xenial/) up to point 4 to install CUDA on your system.
 
 ## Usage
