@@ -15,52 +15,53 @@ In these pictures a setting with the following parameters were used
 |steps | 2000 |
 
 ### Eyeglasses
-![](./outputs/eyeglasses_alpha0.4_k100/Berlusconi.png)
-![](./outputs/eyeglasses_alpha0.4_k100/Trump.png)
-![](./outputs/eyeglasses_alpha0.4_k100/Schroeder.png)
-![](./outputs/eyeglasses_alpha0.4_k100/Bush.png)
+
+<img src="./outputs/eyeglasses_alpha0.4_k100/Berlusconi.png width="175">
+<img src="./outputs/eyeglasses_alpha0.4_k100/Trump.png width="175">
+<img src="./outputs/eyeglasses_alpha0.4_k100/Schroeder.png width="175">
+<img src="./outputs/eyeglasses_alpha0.4_k100/Bush.png width="175">
 
 ### Sunglasses
-![](./outputs/sunglasses_alpha0.4_k100/Berlusconi.png)
-![](./outputs/sunglasses_alpha0.4_k100/Trump.png)
-![](./outputs/sunglasses_alpha0.4_k100/Schroeder.png)
-![](./outputs/sunglasses_alpha0.4_k100/Bush.png)
+<img src="./outputs/sunglasses_alpha0.4_k100/Berlusconi.png width="175">
+<img src="./outputs/sunglasses_alpha0.4_k100/Trump.png width="175">
+<img src="./outputs/sunglasses_alpha0.4_k100/Schroeder.png width="175">
+<img src="./outputs/sunglasses_alpha0.4_k100/Bush.png width="175">
 
 ### Mustache
-![](./outputs/mustache_alpha0.4_k100/Berlusconi.png)
-![](./outputs/mustache_alpha0.4_k100/Trump.png)
-![](./outputs/mustache_alpha0.4_k100/Schroeder.png)
-![](./outputs/mustache_alpha0.4_k100/Bush.png)
+<img src="./outputs/mustache_alpha0.4_k100/Berlusconi.png width="175">
+<img src="./outputs/mustache_alpha0.4_k100/Trump.png width="175">
+<img src="./outputs/mustache_alpha0.4_k100/Schroeder.png width="175">
+<img src="./outputs/mustache_alpha0.4_k100/Bush.png width="175">
 
 ### Female
-![](./outputs/female_alpha0.4_k100/Berlusconi.png)
-![](./outputs/female_alpha0.4_k100/Trump.png)
-![](./outputs/female_alpha0.4_k100/Schroeder.png)
-![](./outputs/female_alpha0.4_k100/Bush.png)
+<img src="./outputs/female_alpha0.4_k100/Berlusconi.png width="175">
+<img src="./outputs/female_alpha0.4_k100/Trump.png width="175">
+<img src="./outputs/female_alpha0.4_k100/Schroeder.png width="175">
+<img src="./outputs/female_alpha0.4_k100/Bush.png width="175">
 
 ### Heavy Makeup
-![](./outputs/heavy_makeup_alpha0.4_k100/Berlusconi.png)
-![](./outputs/heavy_makeup_alpha0.4_k100/Trump.png)
-![](./outputs/heavy_makeup_alpha0.4_k100/Schroeder.png)
-![](./outputs/heavy_makeup_alpha0.4_k100/Bush.png)
+<img src="./outputs/heavy_makeup_alpha0.4_k100/Berlusconi.png width="175">
+<img src="./outputs/heavy_makeup_alpha0.4_k100/Trump.png width="175">
+<img src="./outputs/heavy_makeup_alpha0.4_k100/Schroeder.png width="175">
+<img src="./outputs/heavy_makeup_alpha0.4_k100/Bush.png width="175">
 
 ### Mouth wide open
-![](./outputs/mouth_open_alpha0.4_k100/Berlusconi.png)
-![](./outputs/mouth_open_alpha0.4_k100/Trump.png)
-![](./outputs/mouth_open_alpha0.4_k100/Schroeder.png)
-![](./outputs/mouth_open_alpha0.4_k100/Bush.png)
+<img src="./outputs/mouth_open_alpha0.4_k100/Berlusconi.png width="175">
+<img src="./outputs/mouth_open_alpha0.4_k100/Trump.png width="175">
+<img src="./outputs/mouth_open_alpha0.4_k100/Schroeder.png width="175">
+<img src="./outputs/mouth_open_alpha0.4_k100/Bush.png width="175">
 
 ### Smiling
-![](./outputs/smiling_alpha0.4_k100/Berlusconi.png)
-![](./outputs/smiling_alpha0.4_k100/Trump.png)
-![](./outputs/smiling_alpha0.4_k100/Schroeder.png)
-![](./outputs/smiling_alpha0.4_k100/Bush.png)
+<img src="./outputs/smiling_alpha0.4_k100/Berlusconi.png width="175">
+<img src="./outputs/smiling_alpha0.4_k100/Trump.png width="175">
+<img src="./outputs/smiling_alpha0.4_k100/Schroeder.png width="175">
+<img src="./outputs/smiling_alpha0.4_k100/Bush.png width="175">
 
 ### Smiling
-![](./outputs/asian_alpha0.4_k100/Berlusconi.png)
-![](./outputs/asian_alpha0.4_k100/Trump.png)
-![](./outputs/asian_alpha0.4_k100/Schroeder.png)
-![](./outputs/asian_alpha0.4_k100/Bush.png)
+<img src="./outputs/asian_alpha0.4_k100/Berlusconi.png width="175">
+<img src="./outputs/asian_alpha0.4_k100/Trump.png width="175">
+<img src="./outputs/asian_alpha0.4_k100/Schroeder.png width="175">
+<img src="./outputs/asian_alpha0.4_k100/Bush.png width="175">
 
 
 
