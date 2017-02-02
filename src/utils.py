@@ -83,7 +83,10 @@ def reduce_img_size(imgs):
     # Size of the output image (
     Hp, Wp = 224, 224
 
-    cropped = [img[d:-d, d:-d] for img in imgs]
+    if d > 0:
+        cropped = [img[d:-d, d:-d] for img in imgs]
+    else:
+        cropped = imgs
     resized = [imresize(img, (Hp, Wp)) for img in cropped]
     return resized
 

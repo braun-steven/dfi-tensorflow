@@ -1,9 +1,7 @@
-import math
 from time import time, strftime, gmtime
 
 import matplotlib as mpl
 import tqdm as tqdm
-from tensorflow.contrib.opt import ScipyOptimizerInterface
 
 mpl.use('Agg')
 import matplotlib.pyplot as plt
@@ -57,9 +55,17 @@ class DFI:
         # Name-scope for tensorboard
         # Setup        # Set device
 
-        device = '/gpu:0' if self.FLAGS.gpu else '/cpu:0'
-        phi_z = self._get_phi_z_const(device, feat, person_index)
+        # Get phi(z) = phi(x) + alpha*w
+        phi_z = self._get_phi_z_const(feat, person_index)
 
+        # Get reverse mapped z = phi^-1(phi(z))
+        reverse_mapped_z = self._reverse_map_z(phi_z)
+
+        self._save_output(reverse_mapped_z)
+
+    def _reverse_map_z(self, phi_z):
+        """Reverse map z from phi(z)"""
+        device = '/gpu:0' if self.FLAGS.gpu else '/cpu:0'
         # Open second session with
         with tf.device(device):
             self._graph_var = tf.Graph()
@@ -80,9 +86,9 @@ class DFI:
                     # Set z_tensor reference
                     self._z_tensor = self._nn.inputRGB
 
-                    self.optimize_z_tf(phi_z)
+                    return self.optimize_z_tf(phi_z)
 
-    def _get_phi_z_const(self, device, feat, person_index):
+    def _get_phi_z_const(self, feat, person_index):
         """
         Calculates the constant phi(z) = phi(x) + alpha * w
         :param device: Cpu or gpu
@@ -90,6 +96,8 @@ class DFI:
         :param person_index: person
         :return: phi(z) = phi(x) + alpha * w
         """
+
+        device = '/gpu:0' if self.FLAGS.gpu else '/cpu:0'
         if self.FLAGS.rebuild_cache or not os.path.isfile('cache.ch.npy'):
             print('Using device: {}'.format(device))
             with tf.device(device):
@@ -115,12 +123,15 @@ class DFI:
                             if self.FLAGS.person_image:
                                 start_img_path = self.FLAGS.person_image
                             else:
-                                start_img_path = imgs_path[self.FLAGS.person_index]
+                                start_img_path = imgs_path[
+                                    self.FLAGS.person_index]
 
-                            person_index = get_person_idx_by_path(atts, start_img_path)
+                            person_index = get_person_idx_by_path(atts,
+                                                                  start_img_path)
 
                             start_img = \
-                                reduce_img_size(load_images(*[start_img_path]))[0]
+                                reduce_img_size(load_images(*[start_img_path]))[
+                                    0]
                             plt.imsave(fname='start_img.png', arr=start_img)
 
                             # Get image paths
@@ -176,57 +187,22 @@ class DFI:
             phi_z_const_tensor, self._z_tensor)
 
         # Logging
-        log_path = 'log/run_k-{}_alpha-{}_feat-{}_lamb-{}_lr-{}_rand-{}_opt-{}.{}'.format(
+        log_path = 'log/run_k-{}_alpha-{}_feat-{}_lamb-{}_lr-{}_rand-{}_opt-{}_pers-{}.{}'.format(
             self.FLAGS.k, self.FLAGS.alpha, self.FLAGS.feature, self.FLAGS.lamb,
             self.FLAGS.lr, self.FLAGS.random_start, self.FLAGS.optimizer,
+            self.FLAGS.person_image.split('/')[1],
             strftime("%Y-%m-%d_%H-%M-%S", gmtime())
         )
+
         train_writer = tf.train.SummaryWriter(log_path)
 
+        # Use placeholder as learning rate to enable decreasing lr
         lr = tf.placeholder(dtype=tf.float32, shape=None, name='learning_rate')
 
-        feed_dict = {lr: self.FLAGS.lr}
-        loss_print = tf.Variable(initial_value=0, trainable=False, name='loss_print')
-        self._summaries.append(tf.scalar_summary('loss_print', loss_print))
         # Add the optimizer
         if self.FLAGS.optimizer == 'adam':
-            ### ADAM ###
             train_op = tf.train.AdamOptimizer(learning_rate=lr) \
                 .minimize(loss, var_list=[self._z_tensor])
-
-        elif self.FLAGS.optimizer == 'lbfgs':
-            ### L-BFGS-B ###
-            def lbfgs_cb(l):
-                """Callback for lbfgs loss step"""
-                self._log_step(self.i, train_writer, rescaled_img_tensor, loss,
-                               diff_loss_tensor, tv_loss_tensor)
-
-                if self.i % math.ceil(self.FLAGS.steps / 100.0):
-                    self._sess.run(loss_print.assign(l))
-                self.i += 1
-
-            # Init
-            init_op = tf.initialize_all_variables()
-            self._sess.run(init_op)
-            train_op = ScipyOptimizerInterface(loss=loss,
-                                               var_list=[self._z_tensor],
-                                               options={
-                                                   'maxiter': self.FLAGS.steps,
-                                                   # 'disp':True,
-                                                   'gtol': 10E-16})
-
-            def step_callback(z_eval):
-                if self.i % math.ceil(self.FLAGS.steps / 10.0):
-
-                    self._sess.run(self._z_tensor.assign(np.reshape(z_eval, (1, 224, 224, 3))))
-
-
-            train_op.minimize(self._sess,
-                              step_callback=step_callback,
-                              loss_callback=lbfgs_cb,
-                              fetches=[loss])
-            self._save_output(rescaled_img_tensor)
-            return
 
         # Add the ops to initialize variables.  These will include
         # the optimizer slots added by AdamOptimizer().
@@ -239,24 +215,34 @@ class DFI:
         if self.FLAGS.verbose:
             it = range(self.FLAGS.steps + 1)
         else:
+            # Show progressbar
             it = tqdm.tqdm(range(self.FLAGS.steps + 1))
 
+        # Steps
         for i in it:
+            # Decreasing learning rate
             if i < 2000:
-                train_op.run(feed_dict={lr:self.FLAGS.lr})
+                train_op.run(feed_dict={lr: self.FLAGS.lr})
             elif 2000 <= i < 4000:
-                train_op.run(feed_dict={lr:self.FLAGS.lr/3.0})
+                train_op.run(feed_dict={lr: self.FLAGS.lr / 3.0})
             elif 4000 <= i:
-                train_op.run(feed_dict={lr:self.FLAGS.lr/9.0})
+                train_op.run(feed_dict={lr: self.FLAGS.lr / 9.0})
 
             self._log_step(i, train_writer, rescaled_img_tensor, loss,
                            diff_loss_tensor, tv_loss_tensor)  # Store image
-        self._save_output(rescaled_img_tensor)
 
-    def _save_output(self, rescaled_img_tensor):
+        # Save the output image
+        return rescaled_img_tensor.eval()[0]
+
+    def _save_output(self, dfi_z):
         """Stores the output img in out.png"""
-        plt.imsave(fname='out.png', arr=rescaled_img_tensor.eval()[0])
-        plt.imsave(fname='out_unscaled.png', arr=self._z_tensor.eval()[0])
+        path = 'out_k-{}_alpha-{}_feat-{}_lamb-{}_lr-{}_rand-{}_opt-{}_pers-{}.{}'.format(
+            self.FLAGS.k, self.FLAGS.alpha, self.FLAGS.feature, self.FLAGS.lamb,
+            self.FLAGS.lr, self.FLAGS.random_start, self.FLAGS.optimizer,
+            self.FLAGS.person_image.split('/')[1],
+            strftime("%Y-%m-%d_%H-%M-%S", gmtime())
+        )
+        plt.imsave(fname=path, arr=dfi_z)
 
     def _log_step(self, i, train_writer, rescaled_img_tensor, loss,
                   diff_loss_tensor, tv_loss_tensor):
@@ -321,6 +307,7 @@ class DFI:
             with tf.name_scope('loss'):
                 loss = diff_loss + tv_loss + loss_upper + loss_lower
 
+            # Add summaries
             self._summaries.append(tf.scalar_summary('loss', loss))
             self._summaries.append(tf.scalar_summary('tv_loss', tv_loss))
             self._summaries.append(tf.scalar_summary('diff_loss', diff_loss))
