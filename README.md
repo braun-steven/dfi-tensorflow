@@ -14,6 +14,13 @@ In these pictures a setting with the following parameters were used
 |lamb | 0.001 |
 |steps | 2000 |
 
+### Start images
+
+<img src="./outputs/start-imgs/Berlusconi.png" width="175">
+<img src="./outputs/start-imgs/Trump.png" width="175">
+<img src="./outputs/start-imgs/Schroeder.png" width="175">
+<img src="./outputs/start-imgs/Bush.png" width="175">
+
 ### Eyeglasses
 
 <img src="./outputs/eyeglasses_alpha0.4_k100/Berlusconi.png" width="175">
