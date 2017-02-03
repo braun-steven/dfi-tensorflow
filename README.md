@@ -5,7 +5,7 @@ The goal is to add a specific target feature to the face of a person. This may b
 
 ![](./misc/loss.gif)
 
-Where `z` is the new image, `phi` is the mapping into deep feature space, `alpha` is a scalar and `w` is the deep feature vector of the target feature.
+Where `z` is the new image, `x` is the input image, `phi` is the mapping into deep feature space, `alpha` is a scalar and `w` is the deep feature vector of the target feature.
 
 
 ## Examples
