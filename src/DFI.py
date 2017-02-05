@@ -182,10 +182,11 @@ class DFI:
             phi_z_const_tensor, self._z_tensor)
 
         # Logging
+        person_name = self.FLAGS.person_image.split('/')[len(self.FLAGS.person_image.split('/')) - 1]
         log_path = 'log/run_k-{}_alpha-{}_feat-{}_lamb-{}_lr-{}_rand-{}_opt-{}_pers-{}.{}'.format(
             self.FLAGS.k, self.FLAGS.alpha, self.FLAGS.feature, self.FLAGS.lamb,
             self.FLAGS.lr, self.FLAGS.random_start, self.FLAGS.optimizer,
-            self.FLAGS.person_image.split('/')[1],
+            person_name,
             strftime("%Y-%m-%d_%H-%M-%S", gmtime())
         )
 
@@ -227,7 +228,7 @@ class DFI:
                            diff_loss_tensor, tv_loss_tensor)  # Store image
 
         # Save the output image
-        return rescaled_img_tensor.eval()[0]
+        return self._sess.run(rescaled_img_tensor)[0]
 
     def _save_output(self, dfi_z):
         """Save the output in a feature and a person directory"""
