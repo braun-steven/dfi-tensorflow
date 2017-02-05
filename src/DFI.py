@@ -249,8 +249,8 @@ class DFI:
         person_path = person_prefix + person_suffix + time
         feature_path = feat_prefix + feat_suffix + time
 
-        plt.imsave(fname=person_path + '.png', arr=dfi_z)
-        plt.imsave(fname=feature_path + '.png', arr=dfi_z)
+        plt.imsave(fname=person_path + '.png', arr=dfi_z/255)
+        plt.imsave(fname=feature_path + '.png', arr=dfi_z/255)
 
         # Plot loss
         loss_log = np.array(self._loss_log)
