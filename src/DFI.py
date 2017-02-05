@@ -1,10 +1,13 @@
-from time import time, strftime, gmtime
+from time import strftime, gmtime
 
 import matplotlib as mpl
 import tqdm as tqdm
 
 mpl.use('Agg')
+
 import matplotlib.pyplot as plt
+
+plt.style.use('ggplot')
 import tensorflow as tf
 from sklearn.neighbors import KNeighborsClassifier
 from utils import *
@@ -36,27 +39,21 @@ class DFI:
         self._conv_layer_tensors = []
         self._summaries = []
         self.FLAGS = FLAGS
-        self.i = 0
+        self._loss_log = []
 
         self._conv_layer_tensor_names = ['conv3_1/Relu:0',
                                          'conv4_1/Relu:0',
                                          'conv5_1/Relu:0']
         self._sess = None
 
-    def run(self, feat='No Beard', person_index=0):
-        """
-
-        :param feat: Attribute
-        :param person_index: Index of start image
-        :return:
-        """
+    def run(self):
+        """Start the DFI process"""
         print('Starting DFI')
-        self._feat = feat
         # Name-scope for tensorboard
         # Setup        # Set device
 
         # Get phi(z) = phi(x) + alpha*w
-        phi_z = self._get_phi_z_const(feat, person_index)
+        phi_z = self._get_phi_z_const()
 
         # Get reverse mapped z = phi^-1(phi(z))
         reverse_mapped_z = self._reverse_map_z(phi_z)
@@ -86,14 +83,11 @@ class DFI:
                     # Set z_tensor reference
                     self._z_tensor = self._nn.inputRGB
 
-                    return self.optimize_z_tf(phi_z)
+                    return self._optimize_z_tf(phi_z)
 
-    def _get_phi_z_const(self, feat, person_index):
+    def _get_phi_z_const(self):
         """
         Calculates the constant phi(z) = phi(x) + alpha * w
-        :param device: Cpu or gpu
-        :param feat: feature
-        :param person_index: person
         :return: phi(z) = phi(x) + alpha * w
         """
 
@@ -135,7 +129,8 @@ class DFI:
                             plt.imsave(fname='start_img.png', arr=start_img)
 
                             # Get image paths
-                            pos_paths, neg_paths = self._get_sets(atts, feat,
+                            pos_paths, neg_paths = self._get_sets(atts,
+                                                                  self.FLAGS.feature,
                                                                   person_index)
 
                             # Reduce image sizes
@@ -164,7 +159,7 @@ class DFI:
 
         return phi_z
 
-    def optimize_z_tf(self, phi_z):
+    def _optimize_z_tf(self, phi_z):
         """
 
         :param phi_z: phi(start_img) + alpha*w
@@ -235,20 +230,64 @@ class DFI:
         return rescaled_img_tensor.eval()[0]
 
     def _save_output(self, dfi_z):
-        """Stores the output img in out.png"""
-        path = 'out_k-{}_alpha-{}_feat-{}_lamb-{}_lr-{}_rand-{}_opt-{}_pers-{}.{}'.format(
-            self.FLAGS.k, self.FLAGS.alpha, self.FLAGS.feature, self.FLAGS.lamb,
-            self.FLAGS.lr, self.FLAGS.random_start, self.FLAGS.optimizer,
-            self.FLAGS.person_image.split('/')[1],
-            strftime("%Y-%m-%d_%H-%M-%S", gmtime())
-        )
-        plt.imsave(fname=path, arr=dfi_z)
+        """Save the output in a feature and a person directory"""
+
+        # Plot image
+        split = self.FLAGS.person_image.split('/')
+        person_name = split[len(split) - 1][:-4]
+        feat_name = self.FLAGS.feature.replace(' ', '_')
+        person_prefix = self.FLAGS.output+ '/persons/' + person_name + '/'
+        person_suffix = feat_name + '_alpha-' + str(self.FLAGS.alpha)
+        feat_prefix = self.FLAGS.output+ '/features/' + feat_name + '/'
+        feat_suffix = person_name + '_alpha-' + str(self.FLAGS.alpha)
+
+        ensure_dir(person_prefix)
+        ensure_dir(feat_prefix)
+
+        time = strftime("%Y-%m-%d_%H-%M-%S", gmtime())
+        person_path = person_prefix + person_suffix + time
+        feature_path = feat_prefix + feat_suffix + time
+
+        plt.imsave(fname=person_path + '.png', arr=dfi_z)
+        plt.imsave(fname=feature_path + '.png', arr=dfi_z)
+
+        # Plot loss
+        loss_log = np.array(self._loss_log)
+        plt.plot(loss_log[:, 1], loss_log[:, 0])
+        plt.ylim((0.02, 0.2))
+        plt.xlim((-100, 2100))
+        plt.title('')
+
+        legend = 'alpha: {}\n' \
+                 'k: {}\n' \
+                 'lr: {}'.format(self.FLAGS.alpha,
+                                 self.FLAGS.k,
+                                 self.FLAGS.lr)
+
+        plt.legend('test', loc='upper right', title=legend)
+        plt.title('Feature: {}, Person: {}'.format(self.FLAGS.feature,
+                                                   person_name),
+                  fontsize=16)
+        plt.xlabel('steps')
+        plt.ylabel('loss')
+        plt.savefig(person_path + '_loss.png')
+        plt.savefig(feature_path + '_loss.png')
+
+        f_pers = open(person_path + '_loss.csv', 'w')
+        f_feat = open(feature_path + '_loss.csv', 'w')
+        for loss, step in loss_log:
+            f_pers.write('{},{}\n'.format(step, loss))
+            f_feat.write('{},{}\n'.format(step, loss))
+        f_pers.close()
+        f_feat.close()
 
     def _log_step(self, i, train_writer, rescaled_img_tensor, loss,
                   diff_loss_tensor, tv_loss_tensor):
         """Logs the intermediate values of the optimization step"""
         # Output 100 summary values
         if i % math.ceil(self.FLAGS.steps / 100.0) == 0:
+            self._loss_log.append((loss.eval(), i))
+
             for sum_op in self._summaries:
                 summary = self._sess.run(sum_op)
                 train_writer.add_summary(summary, i)
@@ -280,12 +319,12 @@ class DFI:
         """
 
         with tf.name_scope('summaries'):
-            # Init z with the initial guess
             phi_z_prime = self._phi_tensor()
             subtract = phi_z_prime - phi_z_const_tensor
             square = tf.square(subtract)
             reduce_sum = tf.reduce_sum(square)
 
+            # Get the tv-reg term
             regularization = self._total_variation_regularization(z_tensor,
                                                                   self.FLAGS.beta)
             with tf.name_scope('tv_loss'):
@@ -294,11 +333,13 @@ class DFI:
             with tf.name_scope('diff_loss'):
                 diff_loss = 0.5 * reduce_sum
 
+            # Create loss on values lower than zero
             shape = tf.constant([224, 224, 3], dtype=tf.float32)
             with tf.name_scope('loss_lower'):
                 loss_lower = -1 * tf.reduce_sum(
                     (z_tensor - tf.abs(z_tensor)) / 2.0) / tf.reduce_prod(shape)
 
+            # Create loss on values higher than 255
             with tf.name_scope('loss_upper'):
                 sub = (z_tensor - 255)
                 loss_upper = tf.reduce_sum(
@@ -336,8 +377,6 @@ class DFI:
 
     def _conv2d(self, x, W, strides=[1, 1, 1, 1], p='SAME', name=None):
         """2d Convolution"""
-        # new_shape = tf.TensorShape([tf.Dimension(1)] + x.get_shape().dims)
-        # x = tf.reshape(x, new_shape)
         return tf.nn.conv2d(x, W, strides=strides, padding=p, name=name)
 
     def _phi_tensor(self):
@@ -371,12 +410,9 @@ class DFI:
         else:
             input_images = imgs
 
-        t0 = time()
         fd = {self._nn.inputRGB: input_images}
         ret = self._sess.run(self._conv_layer_tensors,
                              feed_dict=fd)
-        t1 = time()
-        print('Took {}'.format(t1 - t0))
         res = []
 
         # Create result list
