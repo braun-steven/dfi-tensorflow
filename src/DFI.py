@@ -454,8 +454,8 @@ class DFI:
         atts = atts.drop(person_index)
 
         # Split by feature
-        pos_set = atts.loc[atts[feat] == 1]
-        neg_set = atts.loc[atts[feat] == -1]
+        pos_set = atts.loc[atts[feat] > 0]
+        neg_set = atts.loc[atts[feat] < 0]
         pos_paths = self._get_k_neighbors(pos_set, person)
         neg_paths = self._get_k_neighbors(neg_set, person)
 
