@@ -243,9 +243,9 @@ class DFI:
         person_name = split[len(split) - 1][:-4]
         feat_name = self.FLAGS.feature.replace(' ', '_')
         person_prefix = self.FLAGS.output+ '/persons/' + person_name + '/'
-        person_suffix = feat_name + '_alpha-' + str(self.FLAGS.alpha)
+        person_suffix = feat_name + '_alpha-' + str(self.FLAGS.alpha) + '_k-' + str(self.FLAGS.k)
         feat_prefix = self.FLAGS.output+ '/features/' + feat_name + '/'
-        feat_suffix = person_name + '_alpha-' + str(self.FLAGS.alpha)
+        feat_suffix = person_name + '_alpha-' + str(self.FLAGS.alpha) + '_k-' + str(self.FLAGS.k)
 
         ensure_dir(person_prefix)
         ensure_dir(feat_prefix)
