@@ -238,9 +238,9 @@ class DFI:
         person_name = split[len(split) - 1][:-4]
         feat_name = self.FLAGS.feature.replace(' ', '_')
         person_prefix = self.FLAGS.output+ '/persons/' + person_name + '/'
-        person_suffix = feat_name + '_alpha-' + str(self.FLAGS.alpha)
+        person_suffix = feat_name + '_alpha-' + str(self.FLAGS.alpha) + '_k-' + str(self.FLAGS.k)
         feat_prefix = self.FLAGS.output+ '/features/' + feat_name + '/'
-        feat_suffix = person_name + '_alpha-' + str(self.FLAGS.alpha)
+        feat_suffix = person_name + '_alpha-' + str(self.FLAGS.alpha) + '_k-' + str(self.FLAGS.k)
 
         ensure_dir(person_prefix)
         ensure_dir(feat_prefix)
@@ -249,8 +249,8 @@ class DFI:
         person_path = person_prefix + person_suffix + time
         feature_path = feat_prefix + feat_suffix + time
 
-        plt.imsave(fname=person_path + '.png', arr=dfi_z)
-        plt.imsave(fname=feature_path + '.png', arr=dfi_z)
+        plt.imsave(fname=person_path + '.png', arr=dfi_z/255)
+        plt.imsave(fname=feature_path + '.png', arr=dfi_z/255)
 
         # Plot loss
         loss_log = np.array(self._loss_log)
