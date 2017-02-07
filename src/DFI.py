@@ -110,8 +110,11 @@ class DFI:
                                     self._conv_layer_tensor_names[idx])
                                 for idx in range(self.FLAGS.num_layers)]
 
-                            atts = load_discrete_lfw_attributes(
-                                self.FLAGS.data_dir)
+                            if self.FLAGS.discrete_knn:
+                                atts = load_discrete_lfw_attributes(self.FLAGS.data_dir)
+                            else:
+                                atts = load_lfw_attributes(self.FLAGS.data_dir)
+
                             imgs_path = atts['path'].values
 
                             if self.FLAGS.person_image:
@@ -199,6 +202,8 @@ class DFI:
         if self.FLAGS.optimizer == 'adam':
             train_op = tf.train.AdamOptimizer(learning_rate=lr) \
                 .minimize(loss, var_list=[self._z_tensor])
+        else:
+            raise Exception('No optimizer specified')
 
         # Add the ops to initialize variables.  These will include
         # the optimizer slots added by AdamOptimizer().
