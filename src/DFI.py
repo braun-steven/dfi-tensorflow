@@ -116,8 +116,11 @@ class DFI:
                                     self._conv_layer_tensor_names[idx])
                                 for idx in range(self.FLAGS.num_layers)]
 
-                            atts = load_discrete_lfw_attributes(
-                                self.FLAGS.data_dir)
+                            if self.FLAGS.discrete_knn:
+                                atts = load_discrete_lfw_attributes(self.FLAGS.data_dir)
+                            else:
+                                atts = load_lfw_attributes(self.FLAGS.data_dir)
+
                             imgs_path = atts['path'].values
 
                             if self.FLAGS.person_image:
