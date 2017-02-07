@@ -27,13 +27,13 @@ def parse_arg():
     parser.add_argument('--person-index', '-p', default=0, type=int,
                         help="Index of the start image.")
     parser.add_argument('--person-image',
-                        default='lfw-deepfunneled/Aaron_Eckhart/Aaron_Eckhart_0001.jpg',
+                        default='data/lfw-deepfunneled/Aaron_Eckhart/Aaron_Eckhart_0001.jpg',
                         type=str,
                         help="Start image path.")
     parser.add_argument('--list-features', '-l', default=False,
                         action='store_true', help='List all available '
                                                   'features.')
-    parser.add_argument('--optimizer', '-o', type=str, help='Optimizer type')
+    parser.add_argument('--optimizer', '-o', type=str, help='Optimizer type', default='adam')
 
     parser.add_argument('--lr', type=float, default=0.1,
                         help='Learning rate interval in log10')
@@ -61,6 +61,7 @@ def parse_arg():
                         help='Invert deep feature difference (No Beard -> Beard)',
                         default=False, action='store_true')
     parser.add_argument('--output', '-out', default='out', type=str, help='Output directory')
+    parser.add_argument('--discrete-knn', default=False, action='store_true', help='Enable feature discretization for knn')
     args = parser.parse_args()
 
     args.feature = args.feature.replace('_', ' ')

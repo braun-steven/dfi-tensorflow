@@ -202,6 +202,8 @@ class DFI:
         if self.FLAGS.optimizer == 'adam':
             train_op = tf.train.AdamOptimizer(learning_rate=lr) \
                 .minimize(loss, var_list=[self._z_tensor])
+        else:
+            raise Exception('No optimizer specified')
 
         # Add the ops to initialize variables.  These will include
         # the optimizer slots added by AdamOptimizer().
