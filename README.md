@@ -5,11 +5,11 @@ The goal is to add a specific target feature to the face of a person. This may b
 
 ![](./misc/loss.gif)
 
-Where `z` is the new image, `phi` is the mapping into deep feature space, `alpha` is a scalar and `w` is the deep feature vector of the target feature.
+Where `z` is the new image, `x` is the input image, `phi` is the mapping into deep feature space, `alpha` is a scalar and `w` is the deep feature vector of the target feature.
 
 
 ## Examples
-In these pictures a setting with the following parameters were used
+In these pictures a setting with the following parameters was used
 
 | option | value |
 | ------ | ----- |
@@ -77,7 +77,23 @@ In these pictures a setting with the following parameters were used
 <img src="./outputs/asian_alpha0.4_k100/Schroeder.png" width="175">
 <img src="./outputs/asian_alpha0.4_k100/Bush.png" width="175">
 
-
+#### Example execution
+```bash
+./env/bin/python dfi-tensorflow/src/main.py -d dfi-tensorflow/data/ \
+                -m vgg19.npy \      # Select the model
+                -g \                # Enable gpu
+                --optimizer adam \  # Use adam optimizer
+                --steps 2000 \      # Set steps
+                --lr 0.1 \          # Set learning rate
+                --rebuild-cache \   # Disable caching
+                --k 100 \           # Use 100 nearest neighbours for each set
+		        --lamb 0.001 \      # Set lambda
+                --beta 2 \          # Set beta
+                --alpha 0.4 \       # Set alpha
+                -f 'Mustache' \     # Select feature 'Mustache'
+		        --person-image dfi-tensorflow/data/lfw-deepfunneled/Donald_Trump/Donald_Trump_0001.jpg 
+                                    # Start with Trump as input image
+```
 
 ## Setup
 #### Model

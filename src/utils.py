@@ -4,7 +4,7 @@ import numpy as np
 import pandas
 from scipy import ndimage
 from scipy.misc import imresize
-
+import os
 
 def load_images(*paths):
     """
@@ -70,6 +70,16 @@ def load_discrete_lfw_attributes(data_dir):
         df[column] = df[column].apply(np.sign)
 
     return df
+
+def ensure_dir(f: str) -> None:
+    """
+    Ensures that a given directory exists
+    :param f: directory path
+    :return:
+    """
+    d = os.path.dirname(f)
+    if not os.path.exists(d):
+        os.makedirs(d)
 
 
 def reduce_img_size(imgs):
