@@ -25,15 +25,7 @@ class DFI:
     def __init__(self, FLAGS):
         """
         Initialize the DFI procedure
-        :param k: Number of nearest neighbours
-        :param alpha: Scalar factor for w
-        :param lamb: Scalar factor for total variation in loss
-        :param beta: Scalar in exponent of total variation
-        :param model_path: Path to the vgg19 pretrained model
-        :param num_layers: Number of layers of which the deep
-        features shall be extracted
-        :param gpu: Compute or gpu
-        :param data_dir: Directory for images
+        :param FLAGS: namespace object containing the parsed commandline options
         """
         self._model = load_model(FLAGS.model_path)
         self._conv_layer_tensors = []
@@ -41,9 +33,7 @@ class DFI:
         self.FLAGS = FLAGS
         self._loss_log = []
 
-        self._conv_layer_tensor_names = ['conv3_1/Relu:0',
-                                         'conv4_1/Relu:0',
-                                         'conv5_1/Relu:0']
+        self._conv_layer_tensor_names = FLAGS.layers
         self._sess = None
 
     def run(self):
@@ -75,10 +65,16 @@ class DFI:
                 with tf.Session(graph=self._graph_var) as self._sess:
                     self._sess.run(tf.initialize_all_variables())
 
-                    self._conv_layer_tensors = [
-                        self._graph_var.get_tensor_by_name(
-                            self._conv_layer_tensor_names[idx])
-                        for idx in range(self.FLAGS.num_layers)]
+                    try:
+
+                        self._conv_layer_tensors = [self._graph_var.get_tensor_by_name(l) for l in
+                                                    self._conv_layer_tensor_names]
+                    except Exception as e:
+                        raise Exception(
+                            'Invalid layer names. Check out valid layer names '
+                            'as defined in vgg19._init_empty_model() and make '
+                            'sure this block has a relu layer. Exception: {}'
+                                .format(e))
 
                     # Set z_tensor reference
                     self._z_tensor = self._nn.inputRGB
@@ -105,10 +101,8 @@ class DFI:
                         with tf.Session(graph=self._graph_ph) as self._sess:
                             self._sess.run(tf.initialize_all_variables())
 
-                            self._conv_layer_tensors = [
-                                self._graph_ph.get_tensor_by_name(
-                                    self._conv_layer_tensor_names[idx])
-                                for idx in range(self.FLAGS.num_layers)]
+                            self._conv_layer_tensors = [self._graph_ph.get_tensor_by_name(l) for l in
+                                                        self._conv_layer_tensor_names]
 
                             if self.FLAGS.discrete_knn:
                                 atts = load_discrete_lfw_attributes(self.FLAGS.data_dir)
@@ -242,9 +236,9 @@ class DFI:
         split = self.FLAGS.person_image.split('/')
         person_name = split[len(split) - 1][:-4]
         feat_name = self.FLAGS.feature.replace(' ', '_')
-        person_prefix = self.FLAGS.output+ '/persons/' + person_name + '/'
+        person_prefix = self.FLAGS.output + '/persons/' + person_name + '/'
         person_suffix = feat_name + '_alpha-' + str(self.FLAGS.alpha) + '_k-' + str(self.FLAGS.k)
-        feat_prefix = self.FLAGS.output+ '/features/' + feat_name + '/'
+        feat_prefix = self.FLAGS.output + '/features/' + feat_name + '/'
         feat_suffix = person_name + '_alpha-' + str(self.FLAGS.alpha) + '_k-' + str(self.FLAGS.k)
 
         ensure_dir(person_prefix)
@@ -254,8 +248,8 @@ class DFI:
         person_path = person_prefix + person_suffix + time
         feature_path = feat_prefix + feat_suffix + time
 
-        plt.imsave(fname=person_path + '.png', arr=dfi_z/255)
-        plt.imsave(fname=feature_path + '.png', arr=dfi_z/255)
+        plt.imsave(fname=person_path + '.png', arr=dfi_z / 255)
+        plt.imsave(fname=feature_path + '.png', arr=dfi_z / 255)
 
         # Plot loss
         loss_log = np.array(self._loss_log)
@@ -394,7 +388,7 @@ class DFI:
         res = tf.reshape(self._conv_layer_tensors[0], [-1], name='phi_z')
 
         # Concatenate the rest
-        for i in np.arange(1, self.FLAGS.num_layers):
+        for i in np.arange(1, len(self._conv_layer_tensors)):
             tmp = tf.reshape(self._conv_layer_tensors[i], [-1])
             res = tf.concat(0, [res, tmp])
 
@@ -426,7 +420,7 @@ class DFI:
             phi_img = np.array([])
 
             # Append all layer results to a (M,) vector
-            for layer_idx in range(self.FLAGS.num_layers):
+            for layer_idx, layer in enumerate(self._conv_layer_tensors):
                 phi_img = np.append(phi_img,
                                     ret[layer_idx][img_idx].reshape(-1))
 

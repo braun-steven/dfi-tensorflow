@@ -1,6 +1,5 @@
 import argparse
 import os.path
-from pprint import pprint
 
 import numpy as np
 
@@ -20,8 +19,9 @@ def parse_arg():
                         help='Path to the model file (*.npy)')
     parser.add_argument('--gpu', '-g', default=False, action='store_true',
                         help='Enable gpu computing')
-    parser.add_argument('--num-layers', '-n', default=3, type=int,
-                        help='Number of layers. One of {1,2,3}')
+    parser.add_argument('--layers', '-n', default='conv3_1,conv4_1,conv5_1', type=str,
+                        help='Comma separated list of layers for mapping into deep feature space. '
+                             '(Defaults to conv3_1,conv4_1,conv5_1)')
     parser.add_argument('--feature', '-f', default='No Beard', type=str,
                         help='Name of the Feature.')
     parser.add_argument('--person-index', '-p', default=0, type=int,
@@ -61,15 +61,15 @@ def parse_arg():
                         help='Invert deep feature difference (No Beard -> Beard)',
                         default=False, action='store_true')
     parser.add_argument('--output', '-out', default='out', type=str, help='Output directory')
-    parser.add_argument('--discrete-knn', default=False, action='store_true', help='Enable feature discretization for knn')
+    parser.add_argument('--discrete-knn', default=False, action='store_true',
+                        help='Enable feature discretization for knn')
     args = parser.parse_args()
 
     args.feature = args.feature.replace('_', ' ')
 
-    # Check argument constraints
-    if args.num_layers not in np.arange(1, 4):
-        raise argparse.ArgumentTypeError(
-            "%s is an invalid int value. (1 <= n <= 3)" % args.num_layers)
+    # Parse layer list
+    args.layers = [l + '/Relu:0' for l in args.layers.split(',')]
+
 
     if not os.path.exists(args.data_dir):
         raise argparse.ArgumentTypeError(
@@ -78,6 +78,7 @@ def parse_arg():
     if not os.path.exists(args.model_path):
         raise argparse.ArgumentTypeError(
             "%File s does not exist." % args.model_path)
+
 
     return args
 
