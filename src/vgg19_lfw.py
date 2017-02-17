@@ -44,7 +44,7 @@ class Vgg19:
     model every 1000 iteration.
     """
 
-    learning_rate = 0.001
+    learning_rate = 0.05
     "Learning rate for the gradient descent."
 
     _inputRGB = None

@@ -3,6 +3,8 @@ import argparse
 import numpy as np
 import tensorflow as tf
 
+from tqdm import tqdm
+
 from utils import load_discrete_lfw_attributes, reduce_img_size, load_images
 from vgg19_lfw import Vgg19
 
@@ -25,15 +27,21 @@ def build_rgb_means(X):
 
 def run(FLAGS):
     atts = load_discrete_lfw_attributes(FLAGS.data_dir)
-    atts = atts.head(n=20)
+    # atts = atts.head(n=20)
     X = reduce_img_size(load_images(*atts.path))
     del atts['path']
     del atts['person']
     y = [row.as_matrix() for idx, row in atts.iterrows()]
     y = (np.array(y) + 1) / 2.0
 
-    batch_size = 1
-    counter = 0
+    # Randomize
+    np.random.seed(42)
+    np.random.shuffle(X)
+    np.random.seed(42)
+    np.random.shuffle(y)
+
+
+    batch_size = 50
     g = tf.Graph()
     with g.as_default():
         with tf.Session(graph=g) as sess:
@@ -45,36 +53,35 @@ def run(FLAGS):
 
             # Actually intialize the variables
             train_writer = tf.train.SummaryWriter('run')
-            # loss_sum = tf.scalar_summary([['loss']], vgg.loss)
-            # acc_sum = tf.scalar_summary('accuracy', accuracy)
+            loss_sum = tf.scalar_summary('loss', vgg.loss)
+            acc_sum = tf.scalar_summary('accuracy', accuracy)
 
             sess.run(init_op)
-            while counter + batch_size < len(X):
-                X_batch = X[counter:counter + batch_size]
-                y_batch = y[counter:counter + batch_size]
+            epochs = 10
+            for _ in tqdm(range(epochs)):
+                for counter in tqdm(np.arange(start=0, stop=len(X)-batch_size, step=batch_size)):
+                    X_batch = X[counter:counter + batch_size]
+                    y_batch = y[counter:counter + batch_size]
 
-                vgg.optimizer.run(feed_dict={
-                    vgg.inputRGB: X_batch,
-                    vgg.train_labels: y_batch
-                })
+                    vgg.optimizer.run(feed_dict={
+                        vgg.inputRGB: X_batch,
+                        vgg.train_labels: y_batch
+                    })
 
-                # Summary
-                if counter % 1 == 0:
-                    # train_accuracy, sumloss, sumacc = sess.run([accuracy, loss_sum, acc_sum], feed_dict={
-                    #     vgg.inputRGB: X_batch,
-                    #     vgg.train_labels: y_batch
-                    # })
-                    # print("step %d, training accuracy %g" % (counter, train_accuracy))
-                    # train_writer.add_summary(sumloss, global_step=counter)
-                    # train_writer.add_summary(sumacc, global_step=counter)
-                    loss = vgg.loss.eval({
+                    # Summary
+                    if counter % 100 == 0:
+                        train_accuracy, sumloss, sumacc = sess.run([accuracy, loss_sum, acc_sum], feed_dict={
                             vgg.inputRGB: X_batch,
                             vgg.train_labels: y_batch
                         })
-                    print(loss)
-                counter += batch_size
-            print(y)
-
+                        print("step %d, training accuracy %g" % (counter, train_accuracy))
+                        train_writer.add_summary(sumloss, global_step=counter)
+                        train_writer.add_summary(sumacc, global_step=counter)
+                        # loss = vgg.loss.eval({
+                        #         vgg.inputRGB: X_batch,
+                        #         vgg.train_labels: y_batch
+                        #     })
+                        # print(loss)
 
 if __name__ == '__main__':
     run(parse_arg())
