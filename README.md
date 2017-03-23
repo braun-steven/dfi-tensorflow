@@ -23,60 +23,31 @@ In these pictures a setting with the following parameters was used
 
 ### Start images
 
-<img src="./outputs/start-imgs/Berlusconi.png" width="175">
-<img src="./outputs/start-imgs/Trump.png" width="175">
-<img src="./outputs/start-imgs/Schroeder.png" width="175">
-<img src="./outputs/start-imgs/Bush.png" width="175">
+<img src="./outputs/start-imgs/Berlusconi.png" width="175"><img src="./outputs/start-imgs/Trump.png" width="175"><img src="./outputs/start-imgs/Schroeder.png" width="175"><img src="./outputs/start-imgs/Bush.png" width="175">
 
 ### Eyeglasses
 
-<img src="./outputs/eyeglasses_alpha0.4_k100/Berlusconi.png" width="175">
-<img src="./outputs/eyeglasses_alpha0.4_k100/Trump.png" width="175">
-<img src="./outputs/eyeglasses_alpha0.4_k100/Schroeder.png" width="175">
-<img src="./outputs/eyeglasses_alpha0.4_k100/Bush.png" width="175">
+<img src="./outputs/eyeglasses_alpha0.4_k100/Berlusconi.png" width="175"><img src="./outputs/eyeglasses_alpha0.4_k100/Trump.png" width="175"><img src="./outputs/eyeglasses_alpha0.4_k100/Schroeder.png" width="175"><img src="./outputs/eyeglasses_alpha0.4_k100/Bush.png" width="175">
 
 ### Sunglasses
-<img src="./outputs/sunglasses_alpha0.4_k100/Berlusconi.png" width="175">
-<img src="./outputs/sunglasses_alpha0.4_k100/Trump.png" width="175">
-<img src="./outputs/sunglasses_alpha0.4_k100/Schroeder.png" width="175">
-<img src="./outputs/sunglasses_alpha0.4_k100/Bush.png" width="175">
+<img src="./outputs/sunglasses_alpha0.4_k100/Berlusconi.png" width="175"><img src="./outputs/sunglasses_alpha0.4_k100/Trump.png" width="175"><img src="./outputs/sunglasses_alpha0.4_k100/Schroeder.png" width="175"><img src="./outputs/sunglasses_alpha0.4_k100/Bush.png" width="175">
 
 ### Mustache
-<img src="./outputs/mustache_alpha0.4_k100/Berlusconi.png" width="175">
-<img src="./outputs/mustache_alpha0.4_k100/Trump.png" width="175">
-<img src="./outputs/mustache_alpha0.4_k100/Schroeder.png" width="175">
-<img src="./outputs/mustache_alpha0.4_k100/Bush.png" width="175">
-
+<img src="./outputs/mustache_alpha0.4_k100/Berlusconi.png" width="175"><img src="./outputs/mustache_alpha0.4_k100/Trump.png" width="175"><img src="./outputs/mustache_alpha0.4_k100/Schroeder.png" width="175"><img src="./outputs/mustache_alpha0.4_k100/Bush.png" width="175">
 ### Female
-<img src="./outputs/female_alpha0.4_k100/Berlusconi.png" width="175">
-<img src="./outputs/female_alpha0.4_k100/Trump.png" width="175">
-<img src="./outputs/female_alpha0.4_k100/Schroeder.png" width="175">
+<img src="./outputs/female_alpha0.4_k100/Berlusconi.png" width="175"><img src="./outputs/female_alpha0.4_k100/Trump.png" width="175"><img src="./outputs/female_alpha0.4_k100/Schroeder.png" width="175">
 <img src="./outputs/female_alpha0.4_k100/Bush.png" width="175">
-
 ### Heavy Makeup
-<img src="./outputs/heavy_makeup_alpha0.4_k100/Berlusconi.png" width="175">
-<img src="./outputs/heavy_makeup_alpha0.4_k100/Trump.png" width="175">
-<img src="./outputs/heavy_makeup_alpha0.4_k100/Schroeder.png" width="175">
-<img src="./outputs/heavy_makeup_alpha0.4_k100/Bush.png" width="175">
+<img src="./outputs/heavy_makeup_alpha0.4_k100/Berlusconi.png" width="175"><img src="./outputs/heavy_makeup_alpha0.4_k100/Trump.png" width="175"><img src="./outputs/heavy_makeup_alpha0.4_k100/Schroeder.png" width="175"><img src="./outputs/heavy_makeup_alpha0.4_k100/Bush.png" width="175">
 
 ### Mouth wide open
-<img src="./outputs/mouth_open_alpha0.4_k100/Berlusconi.png" width="175">
-<img src="./outputs/mouth_open_alpha0.4_k100/Trump.png" width="175">
-<img src="./outputs/mouth_open_alpha0.4_k100/Schroeder.png" width="175">
-<img src="./outputs/mouth_open_alpha0.4_k100/Bush.png" width="175">
+<img src="./outputs/mouth_open_alpha0.4_k100/Berlusconi.png" width="175"><img src="./outputs/mouth_open_alpha0.4_k100/Trump.png" width="175"><img src="./outputs/mouth_open_alpha0.4_k100/Schroeder.png" width="175"><img src="./outputs/mouth_open_alpha0.4_k100/Bush.png" width="175">
 
 ### Smiling
-<img src="./outputs/smiling_alpha0.4_k100/Berlusconi.png" width="175">
-<img src="./outputs/smiling_alpha0.4_k100/Trump.png" width="175">
-<img src="./outputs/smiling_alpha0.4_k100/Schroeder.png" width="175">
-<img src="./outputs/smiling_alpha0.4_k100/Bush.png" width="175">
-
+<img src="./outputs/smiling_alpha0.4_k100/Berlusconi.png" width="175"><img src="./outputs/smiling_alpha0.4_k100/Trump.png" width="175"><img src="./outputs/smiling_alpha0.4_k100/Schroeder.png" width="175"><img src="./outputs/smiling_alpha0.4_k100/Bush.png" width="175">
 ### Asian
-<img src="./outputs/asian_alpha0.4_k100/Berlusconi.png" width="175">
-<img src="./outputs/asian_alpha0.4_k100/Trump.png" width="175">
-<img src="./outputs/asian_alpha0.4_k100/Schroeder.png" width="175">
+<img src="./outputs/asian_alpha0.4_k100/Berlusconi.png" width="175"><img src="./outputs/asian_alpha0.4_k100/Trump.png" width="175"><img src="./outputs/asian_alpha0.4_k100/Schroeder.png" width="175">
 <img src="./outputs/asian_alpha0.4_k100/Bush.png" width="175">
-
 #### Example execution
 ```bash
 ./env/bin/python dfi-tensorflow/src/main.py -d dfi-tensorflow/data/ \
