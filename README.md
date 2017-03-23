@@ -35,8 +35,7 @@ In these pictures a setting with the following parameters was used
 ### Mustache
 <img src="./outputs/mustache_alpha0.4_k100/Berlusconi.png" width="175"><img src="./outputs/mustache_alpha0.4_k100/Trump.png" width="175"><img src="./outputs/mustache_alpha0.4_k100/Schroeder.png" width="175"><img src="./outputs/mustache_alpha0.4_k100/Bush.png" width="175">
 ### Female
-<img src="./outputs/female_alpha0.4_k100/Berlusconi.png" width="175"><img src="./outputs/female_alpha0.4_k100/Trump.png" width="175"><img src="./outputs/female_alpha0.4_k100/Schroeder.png" width="175">
-<img src="./outputs/female_alpha0.4_k100/Bush.png" width="175">
+<img src="./outputs/female_alpha0.4_k100/Berlusconi.png" width="175"><img src="./outputs/female_alpha0.4_k100/Trump.png" width="175"><img src="./outputs/female_alpha0.4_k100/Schroeder.png" width="175"><img src="./outputs/female_alpha0.4_k100/Bush.png" width="175">
 ### Heavy Makeup
 <img src="./outputs/heavy_makeup_alpha0.4_k100/Berlusconi.png" width="175"><img src="./outputs/heavy_makeup_alpha0.4_k100/Trump.png" width="175"><img src="./outputs/heavy_makeup_alpha0.4_k100/Schroeder.png" width="175"><img src="./outputs/heavy_makeup_alpha0.4_k100/Bush.png" width="175">
 
